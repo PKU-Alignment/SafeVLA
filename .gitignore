@@ -1,0 +1,113 @@
+# build artifacts
+
+.eggs/
+.mypy_cache
+my_package.egg-info/
+build/
+dist/
+pip-wheel-metadata/
+tmp/
+il_training_output/
+
+
+# dev tools
+
+.envrc
+.python-version
+.idea
+.venv/
+.vscode/
+/*.iml
+src/
+# jupyter notebooks
+
+.ipynb_checkpoints
+
+
+# miscellaneous
+
+.cache/
+doc/_build/
+*.swp
+.DS_Store
+
+
+# python
+
+*.pyc
+*.pyo
+__pycache__
+
+
+# testing and continuous integration
+
+.coverage
+.pytest_cache/
+.benchmarks
+
+# documentation build artifacts
+
+docs/build
+site/
+
+# Data
+
+data/
+artifacts/
+
+# Output files
+
+experiment_output/
+**/debug_*/
+**/debug/
+
+# ml ops
+
+wandb/
+
+# Model files
+*.glb
+*.obj
+
+# Blender files
+*.blend
+*.blend1
+
+# Annotations
+data_generation/objaverse/annotations/*
+debug/
+
+objaverse_data/
+
+scripts/dataset_viewer/static/
+
+objectnav_task_specs/
+
+affordance_data/
+
+src
+
+*.log
+eval/
+sfrl_ckpt/
+rl_ckpt/
+il_ckpt/
+data_generation/datagen_scripts/*.jpg
+*/topdown_teaser_images/*
+*/additional_for_viz/*
+*/wandb_df_cache/*
+*.mp4
+*.pt
+*.ckpt
+# results
+.run/
+FastSAM.pt
+checkpoints/
+easynav_rl_json/
+il_results/
+objaverse_assets/
+objaverse_houses/
+rl_data/
+rl_results/
+rl_weights/
+
