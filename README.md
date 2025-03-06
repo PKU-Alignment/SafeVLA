@@ -9,7 +9,16 @@
 |---| ---------------------------------- | --- | --- | --- |
 |Baseline| <img src="assets/unsafevideo1.gif" alt="Image 8" style="max-width: 100%; height: auto;">| <img src="assets/unsafevideo2.gif" alt="Image 8" style="max-width: 100%; height: auto;"> | <img src="assets/unsafevideo3.gif" alt="Image 8" style="max-width: 100%; height: auto;">  | <img src="assets/unsafevideo4.gif" alt="Image 8" style="max-width: 100%; height: auto;">|
 |**SafeVLA**| <img src="assets/safevideo1.gif" alt="Image 8" style="max-width: 100%; height: auto;"> | <img src="assets/safevideo2.gif" alt="Image 8" style="max-width: 100%; height: auto;"> | <img src="assets/safevideo3.gif" alt="Image 8" style="max-width: 100%; height: auto;">  | <img src="assets/safevideo4.gif" alt="Image 8" style="max-width: 100%; height: auto;">|
-> SafeVLA can significantly enhance the security capability of the VLA model.
+> SafeVLA can significantly ensure safety while optimize task performance.
+<hr style="border: 2px solid gray;"></hr>
+
+## Latest Updates
+- [2025-03-06] Paper released: [SafeVLA: Towards Safety Alignment of Vision-Language-Action Model via Safe Reinforcement Learning](https://arxiv.org/abs/2503.03480)
+- [2025-02-28] Initial release
+
+<hr style="border: 2px solid gray;"></hr>
+
+
 
 ## Quick Start
 
@@ -146,4 +155,16 @@ cat safevla_* | tar -xz
 
 ```bash
 bash scripts/objnav.bash
+```
+---
+
+## Citation
+If you find our code or models useful in your work, please cite [our paper](https://arxiv.org/abs/2503.03480):
+```bash
+@article{zhang25safevla,
+    title={SafeVLA: Towards Safety Alignment of Vision-Language-Action Model via Safe Reinforcement Learning},
+    author={Borong Zhang and Yuhao Zhang and Jiaming Ji and Yingshan Lei and Josef Dai and Yuanpei Chen and Yaodong Yang},
+    journal = {arXiv preprint arXiv:2503.03480},
+    year={2025}
+} 
 ```
