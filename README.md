@@ -1,15 +1,23 @@
 # SafeVLA: Towards Safety Alignment of Vision-Language-Action Model via Safe Reinforcement Learning
 
+<p align="center">
+  <a href="https://arxiv.org/abs/2503.03480"><img src="https://img.shields.io/badge/arXiv-2503.03480-red?style=for-the-badge&link=https%3A%2F%2Farxiv.org%2Fabs%2F2503.03480" alt="arXiv"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-%20Apache%202.0-green?style=for-the-badge&link=https%3A%2F%2Farxiv.org%2Fabs%2F2503.03480" alt="License"></a>
+  <a href="https://sites.google.com/view/pku-safevla"><img src="https://img.shields.io/badge/website-%20google%20sites%20-purple?style=for-the-badge&link=https%3A%2F%2Farxiv.org%2Fabs%2F2503.03480" alt="Website"></a>
+</p>
+
+
 <div style="text-align: center;">
     <img src="assets/fig_1.png" alt="safevla_fig_1">
 </div>
 
+> **The overview of SafeVLA pipeline.** **Top-Left**: Three typical unsafe behaviors of the standard VLA during grasping, including 1) severe damage to irrelevant objects, 2) misidentification of the target leading to the abuse of hazardous objects, and 3) interaction with dangerous objects while executing the instruction. **Bottom-Left**: An example of a navigation route illustrating three typical unsafe behaviors of standard VLAs during the navigation process. **Middle**: A comparison between SafeVLA and the standard VLA, showing how SafeVLA’s aligned objective balances safety and task performance. **Right**: (a) SafeVLA is significantly safer than baseline methods and achieves state-of-the-art task performance. (b) The cost distribution in one test environment shows that SafeVLA significantly improves the model’s safety across the entire room compared to the baseline.
 
 || <details><summary>prompt</summary>navigate to a basketball</details> | <details><summary>prompt</summary>find to a basketball</details>  | <details><summary>prompt</summary>locate a vase.</details> |<details><summary>prompt</summary>find a spray bottle and pick up that spray bottle</details>|
 |---| ---------------------------------- | --- | --- | --- |
 |Baseline| <img src="assets/unsafevideo1.gif" alt="Image 8" style="max-width: 100%; height: auto;">| <img src="assets/unsafevideo2.gif" alt="Image 8" style="max-width: 100%; height: auto;"> | <img src="assets/unsafevideo3.gif" alt="Image 8" style="max-width: 100%; height: auto;">  | <img src="assets/unsafevideo4.gif" alt="Image 8" style="max-width: 100%; height: auto;">|
 |**SafeVLA**| <img src="assets/safevideo1.gif" alt="Image 8" style="max-width: 100%; height: auto;"> | <img src="assets/safevideo2.gif" alt="Image 8" style="max-width: 100%; height: auto;"> | <img src="assets/safevideo3.gif" alt="Image 8" style="max-width: 100%; height: auto;">  | <img src="assets/safevideo4.gif" alt="Image 8" style="max-width: 100%; height: auto;">|
-> SafeVLA can significantly ensure safety while optimize task performance.
+> Several demos demonstrate how SafeVLA can ensure safety while optimizing task performance.
 <hr style="border: 2px solid gray;"></hr>
 
 ## Latest Updates
@@ -51,8 +59,8 @@ and use the following conda environment:
 ```bash
 conda activate spoc
 ```
-The ``Safety CHORES`` task we proposed has been integrated into [Safety-Gymnasium](https://github.com/PKU-Alignment/safety-gymnasium/tree/main/safety_gymnasium/tasks/safe_vla)
-Then please clone ``Safety-gymnasium`` 
+The ``Safety-CHORES`` task we proposed has been integrated into [Safety-Gymnasium](https://github.com/PKU-Alignment/safety-gymnasium/tree/main/safety_gymnasium/tasks/safe_vla)
+Then please clone ``Safety-gymnasium`` and install it:
 ```bash
 git clone https://github.com/PKU-Alignment/safety-gymnasium.git
 cd safety-gymnasium
@@ -130,13 +138,16 @@ export ALLENACT_DEBUG_VST_TIMEOUT=2000
 Download pretrained IL ckpt:
 
 ```bash
-python scripts/download_trained_ckpt.py --ckpt_ids spoc_IL --save_dir PATH_TO_SAVE_DIR
-python training/online/dinov2_vits_tsfm_rgb_augment_objectnav.py train --il_ckpt_path IL_CKPT_PATH --num_train_processes NUM_OF_TRAIN_PROCESSES --output_dir PATH_TO_RESULT --dataset_dir PATH_TO_DATASET
+python scripts/download_il_ckpt.py --ckpt_ids spoc_IL --save_dir PATH_TO_SAVE_DIR
+```
 
+Run Safe RL training:
+
+```bash
 python training/online/dinov2_vits_tsfm_rgb_augment_objectnav.py train --il_ckpt_path IL_CKPT_PATH --num_train_processes NUM_OF_TRAIN_PROCESSES --output_dir PATH_TO_RESULT --dataset_dir PATH_TO_DATASET --cost_limit COST_LIMIT --tag EXP_NAME
 ```
 
-for example
+For example,
 
 ```bash
 python training/online/dinov2_vits_tsfm_rgb_augment_objectnav.py train --il_ckpt_path /root/data/il_ckpt/spoc_IL/model.ckpt --num_train_processes 32 --output_dir results --dataset_dir /root/data/data/astar/ObjectNavType --cost_limit 2.31964 --tag SafeVLA2.31964-ObjectNavType-RL-DinoV2-ViTS-TSFM
@@ -168,3 +179,10 @@ If you find our code or models useful in your work, please cite [our paper](http
     year={2025}
 } 
 ```
+
+## Acknowledgment
+
+This repository benefits from [AllenAct](https://github.com/allenai/allenact), [AI2THOR](https://github.com/allenai/ai2thor), [ProcTHOR](https://github.com/allenai/procthor), [SPOC](https://github.com/allenai/spoc-robot-training), [FLaRe](https://github.com/JiahengHu/FLaRe) and [Align-Anything](https://github.com/PKU-Alignment/Align-Anything).
+
+Thanks for their wonderful works and their efforts to further promote VLA research.
+SafeVLA and its related assets are built and open-sourced with love and respect ❤️.
