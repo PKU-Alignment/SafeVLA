@@ -9,14 +9,16 @@
 
 <div style="text-align: center;">
     <img src="assets/fig_1.png" alt="safevla_fig_1">
+
+The left figure illustrates three typical unsafe behaviors exhibited by traditional VLA models in grasping tasks: 1) severe damage to irrelevant objects, 2) misidentification of target objects leading to the misuse of hazardous items, and 3) interactions with dangerous objects while executing instructions. The right figure further demonstrates three unsafe behaviors of traditional VLA models during navigation through examples of navigation paths.
 </div>
 
 > **The overview of SafeVLA pipeline.** **Top-Left**: Three typical unsafe behaviors of the standard VLA during grasping, including 1) severe damage to irrelevant objects, 2) misidentification of the target leading to the abuse of hazardous objects, and 3) interaction with dangerous objects while executing the instruction. **Bottom-Left**: An example of a navigation route illustrating three typical unsafe behaviors of standard VLAs during the navigation process. **Middle**: A comparison between SafeVLA and the standard VLA, showing how SafeVLA’s aligned objective balances safety and task performance. **Right**: (a) SafeVLA is significantly safer than baseline methods and achieves state-of-the-art task performance. (b) The cost distribution in one test environment shows that SafeVLA significantly improves the model’s safety across the entire room compared to the baseline.
 
 || <details><summary>prompt</summary>navigate to a basketball</details> | <details><summary>prompt</summary>find to a basketball</details>  | <details><summary>prompt</summary>locate a vase.</details> |<details><summary>prompt</summary>find a spray bottle and pick up that spray bottle</details>|
 |---| ---------------------------------- | --- | --- | --- |
-|Baseline| <img src="assets/unsafevideo1.gif" alt="Image 8" style="max-width: 100%; height: auto;">| <img src="assets/unsafevideo2.gif" alt="Image 8" style="max-width: 100%; height: auto;"> | <img src="assets/unsafevideo3.gif" alt="Image 8" style="max-width: 100%; height: auto;">  | <img src="assets/unsafevideo4.gif" alt="Image 8" style="max-width: 100%; height: auto;">|
-|**SafeVLA**| <img src="assets/safevideo1.gif" alt="Image 8" style="max-width: 100%; height: auto;"> | <img src="assets/safevideo2.gif" alt="Image 8" style="max-width: 100%; height: auto;"> | <img src="assets/safevideo3.gif" alt="Image 8" style="max-width: 100%; height: auto;">  | <img src="assets/safevideo4.gif" alt="Image 8" style="max-width: 100%; height: auto;">|
+|Baseline| <img src="assets/unsafevideo_1.gif" alt="Image 8" style="max-width: 100%; height: auto;">| <img src="assets/unsafevideo_2.gif" alt="Image 8" style="max-width: 100%; height: auto;"> | <img src="assets/unsafevideo_3.gif" alt="Image 8" style="max-width: 100%; height: auto;">  | <img src="assets/unsafevideo_4.gif" alt="Image 8" style="max-width: 100%; height: auto;">|
+|**SafeVLA**| <img src="assets/safevideo_1.gif" alt="Image 8" style="max-width: 100%; height: auto;"> | <img src="assets/safevideo_2.gif" alt="Image 8" style="max-width: 100%; height: auto;"> | <img src="assets/safevideo_3.gif" alt="Image 8" style="max-width: 100%; height: auto;">  | <img src="assets/safevideo_4.gif" alt="Image 8" style="max-width: 100%; height: auto;">|
 > Several demos demonstrate how SafeVLA can ensure safety while optimizing task performance.
 <hr style="border: 2px solid gray;"></hr>
 
