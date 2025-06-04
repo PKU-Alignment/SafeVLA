@@ -1,19 +1,11 @@
-# SafeVLA: Towards Safety Alignment of Vision-Language-Action Model via Safe Reinforcement Learning
+# SafeVLA: Towards Safety Alignment of Vision-Language-Action Model via Constrained Learning
 
 <p align="center">
   <a href="https://arxiv.org/abs/2503.03480"><img src="https://img.shields.io/badge/arXiv-2503.03480-red?style=for-the-badge&link=https%3A%2F%2Farxiv.org%2Fabs%2F2503.03480" alt="arXiv"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-%20Apache%202.0-green?style=for-the-badge&link=https%3A%2F%2Farxiv.org%2Fabs%2F2503.03480" alt="License"></a>
-  <a href="https://sites.google.com/view/pku-safevla"><img src="https://img.shields.io/badge/website-%20google%20sites%20-purple?style=for-the-badge&link=https%3A%2F%2Farxiv.org%2Fabs%2F2503.03480" alt="Website"></a>
+  <a href="https://pku-safevla.github.io"><img src="https://img.shields.io/badge/website-github.io-lightblue?style=for-the-badge" alt="Website"></a>
 </p>
 
-
-<div style="text-align: center;">
-    <img src="assets/fig_1.png" alt="safevla_fig_1">
-
-The left figure illustrates three typical unsafe behaviors exhibited by traditional VLA models in grasping tasks: 1) severe damage to irrelevant objects, 2) misidentification of target objects leading to the misuse of hazardous items, and 3) interactions with dangerous objects while executing instructions. The right figure further demonstrates three unsafe behaviors of traditional VLA models during navigation through examples of navigation paths.
-</div>
-
-> **The overview of SafeVLA pipeline.** **Top-Left**: Three typical unsafe behaviors of the standard VLA during grasping, including 1) severe damage to irrelevant objects, 2) misidentification of the target leading to the abuse of hazardous objects, and 3) interaction with dangerous objects while executing the instruction. **Bottom-Left**: An example of a navigation route illustrating three typical unsafe behaviors of standard VLAs during the navigation process. **Middle**: A comparison between SafeVLA and the standard VLA, showing how SafeVLA’s aligned objective balances safety and task performance. **Right**: (a) SafeVLA is significantly safer than baseline methods and achieves state-of-the-art task performance. (b) The cost distribution in one test environment shows that SafeVLA significantly improves the model’s safety across the entire room compared to the baseline.
 
 || <details><summary>prompt</summary>navigate to a basketball</details> | <details><summary>prompt</summary>find to a basketball</details>  | <details><summary>prompt</summary>locate a vase.</details> |<details><summary>prompt</summary>find a spray bottle and pick up that spray bottle</details>|
 |---| ---------------------------------- | --- | --- | --- |
@@ -23,7 +15,7 @@ The left figure illustrates three typical unsafe behaviors exhibited by traditio
 <hr style="border: 2px solid gray;"></hr>
 
 ## Latest Updates
-- [2025-03-06] Paper released: [SafeVLA: Towards Safety Alignment of Vision-Language-Action Model via Safe Reinforcement Learning](https://arxiv.org/abs/2503.03480)
+- [2025-03-06] Paper released: [SafeVLA: Towards Safety Alignment of Vision-Language-Action Model via Constrained Learning](https://arxiv.org/abs/2503.03480)
 - [2025-02-28] Initial release
 
 <hr style="border: 2px solid gray;"></hr>
