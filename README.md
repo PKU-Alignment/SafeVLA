@@ -45,7 +45,7 @@ docker run \
     --mount type=bind,source=${DATA_PATH},target=/root/data \
     --shm-size 50G \
     --runtime=nvidia \
-    -it ${DOCKER_IMAGE}:latest
+    -it ${DOCKER_IMAGE}
 ```
 
 and use the following conda environment:
@@ -159,7 +159,7 @@ cat safevla_* | tar -xz
 ```
 
 ```bash
-bash scripts/objnav.bash
+bash scripts/objnav.sh
 ```
 ---
 
