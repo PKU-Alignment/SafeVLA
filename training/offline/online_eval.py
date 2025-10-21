@@ -9,7 +9,7 @@ from allenact.utils.misc_utils import str2bool
 from architecture.models.transformer_models import REGISTERED_MODELS
 from online_evaluation.local_logging_utils import LoadLocalWandb, LocalWandb
 from online_evaluation.online_evaluator import OnlineEvaluatorManager
-from tasks import REGISTERED_TASKS
+from safety_gymnasium.tasks.safe_vla import REGISTERED_TASKS
 from training.offline.dataset_mixtures import get_mixture_by_name
 
 

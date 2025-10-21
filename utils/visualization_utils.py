@@ -246,12 +246,16 @@ class VideoLogging:
         full_font_load = ImageFont.truetype(font_to_use, 14)
 
         IMAGE_BORDER = 25
-        TEXT_OFFSET_H = 60
+        TEXT_OFFSET_H = 60  # Restore original value for action details
         TEXT_OFFSET_V = 30
+
+        # Define two alignment positions - one for labels and one for action details
+        action_x = IMAGE_BORDER * 2 + agent_width + TEXT_OFFSET_H  # For action details
+        info_x = IMAGE_BORDER * 2 + agent_width + 20  # For main labels alignment
 
         image_dims = (
             agent_height + 2 * IMAGE_BORDER + 30,
-            agent_width + 2 * IMAGE_BORDER + 500,
+            agent_width + 2 * IMAGE_BORDER + 300,  # Further reduced right padding to 300
             ch,
         )
         image = np.full(image_dims, 255, dtype=np.uint8)
@@ -272,26 +276,7 @@ class VideoLogging:
         danger_objects = debug.get("danger_objects", None)  
         error_message = debug.get("error_message", None)  
         
-        if camera_seen is not None:
-            img_draw.text(
-                (IMAGE_BORDER * 2 + agent_width + (TEXT_OFFSET_H + 180), IMAGE_BORDER * 1 ),
-                f"Camera Seen Objects",
-                font=full_font_load,
-                fill="black",
-                anchor="lm",
-            )
-            for i, obj in enumerate(camera_seen):
-                flag = False
-                for obj_d in danger_objects:
-                    if obj_d.lower() in obj.lower():
-                        flag = True
-                img_draw.text(
-                    (IMAGE_BORDER * 2 + agent_width + (TEXT_OFFSET_H + 180), IMAGE_BORDER * 1 + 13 + i * 13),
-                    f"{obj}",
-                    font=full_font_load,
-                    fill="red" if flag else "gray",
-                    anchor="lm",
-                )
+        # Removed camera seen objects display for cleaner visualization
         if action_dist is not None:
             for i, (prob, action) in enumerate(zip(action_dist, action_names)):
                 try:
@@ -300,10 +285,10 @@ class VideoLogging:
                     action_long_name = action
                 if i < 10:
                     img_draw.text(
-                        (
-                            IMAGE_BORDER * 2 + agent_width + TEXT_OFFSET_H,
-                            (TEXT_OFFSET_V + 5) + i * 10,
-                        ),
+                    (
+                        action_x,
+                        (TEXT_OFFSET_V + 5) + i * 10,
+                    ),
                         action_long_name,
                         font=ImageFont.truetype(font_to_use, 10),
                         fill="gray" if action != taken_action else "black",
@@ -311,7 +296,7 @@ class VideoLogging:
                     )
                     img_draw.rectangle(
                         (
-                            IMAGE_BORDER * 2 + agent_width + (TEXT_OFFSET_H + 5),
+                            action_x + 5,
                             TEXT_OFFSET_V + i * 10,
                             IMAGE_BORDER * 2 + agent_width + (TEXT_OFFSET_H + 5) + int(100 * prob),
                             (TEXT_OFFSET_V + 5) + i * 10,
@@ -322,7 +307,7 @@ class VideoLogging:
                 else:
                     img_draw.text(
                         (
-                            IMAGE_BORDER * 2 + agent_width + TEXT_OFFSET_H + 200,
+                            action_x + 200,
                             (TEXT_OFFSET_V + 5) + (i - 10) * 10,
                         ),
                         action_long_name,
@@ -332,7 +317,7 @@ class VideoLogging:
                     )
                     img_draw.rectangle(
                         (
-                            IMAGE_BORDER * 2 + agent_width + (TEXT_OFFSET_H + 205),
+                            action_x + 205,
                             TEXT_OFFSET_V + (i - 10) * 10,
                             IMAGE_BORDER * 2
                             + agent_width
@@ -345,10 +330,10 @@ class VideoLogging:
                     )
 
         img_draw.text(
-            (IMAGE_BORDER * 2 + agent_width, IMAGE_BORDER * 1 + 90),
-            f" Task: {task_desc}",
-            font=full_font_load,  # ImageFont.truetype(font_to_use, 14),
-            fill="gray",
+            (info_x, IMAGE_BORDER * 1 + 90),
+            f"Task: {task_desc}",
+            font=full_font_load,
+            fill=(100, 100, 100),  # Dark gray for consistency
             anchor="lm",
         )
         img_draw.text(
@@ -359,17 +344,17 @@ class VideoLogging:
         )
         if last_action_success is not None:
             img_draw.text(
-                (IMAGE_BORDER * 2 + agent_width + TEXT_OFFSET_H, IMAGE_BORDER * 1 + 110),
+                (info_x, IMAGE_BORDER * 1 + 110),
                 "Last Action:", 
-                font=full_font_load,  # ImageFont.truetype(font_to_use, 14),
-                fill="gray",
-                anchor="rm",
+                font=full_font_load,
+                fill=(100, 100, 100),  # Dark gray for consistency
+                anchor="lm",
             )
             img_draw.text(
-                (IMAGE_BORDER * 2 + agent_width + TEXT_OFFSET_H, IMAGE_BORDER * 1 + 110),
-                " Success" if last_action_success else " Failure",
-                font=full_font_load,  # ImageFont.truetype(font_to_use, 14),
-                fill="green" if last_action_success else "red",
+                (info_x + 120, IMAGE_BORDER * 1 + 110),
+                "Success" if last_action_success else "Failure",
+                font=full_font_load,
+                fill=(50, 180, 50) if last_action_success else (220, 50, 50),  # Adjusted colors
                 anchor="lm",
             )
 
@@ -381,61 +366,73 @@ class VideoLogging:
             except:
                 error_obj = error_message
             img_draw.text(
-                (IMAGE_BORDER * 2 + agent_width + TEXT_OFFSET_H - 20, IMAGE_BORDER * 1 + 130),
+                (info_x, IMAGE_BORDER * 1 + 130),
                 f"Error: {error_obj}",
-                font=full_font_load,  # ImageFont.truetype(font_to_use, 14),    
-                fill="red",
-                anchor="lm",
-            )
-        if sum_cost is not None:
-            img_draw.text(
-                (IMAGE_BORDER * 2 + agent_width + TEXT_OFFSET_H - 20, IMAGE_BORDER * 1 + 175),
-                f"Total Cost: {sum_cost}",
                 font=full_font_load,
-                fill="red",
+                fill=(220, 50, 50),  # Consistent red color
                 anchor="lm",
             )
-        if sum_corner is not None:
-            img_draw.text(
-                (IMAGE_BORDER * 2 + agent_width + TEXT_OFFSET_H - 20, IMAGE_BORDER * 1 + 190),
-                f"Corner Cost: {sum_corner}",
-                font=full_font_load,
-                fill="red",
-                anchor="lm",
-            )
-        if sum_blind is not None:
-            img_draw.text(
-                (IMAGE_BORDER * 2 + agent_width + TEXT_OFFSET_H - 20, IMAGE_BORDER * 1 + 205),
-                f"Blind Spot Cost: {sum_blind}",
-                font=full_font_load,
-                fill="red",
-                anchor="lm",
-            )
-        if sum_danger is not None:
-            img_draw.text(
-                (IMAGE_BORDER * 2 + agent_width + TEXT_OFFSET_H - 20, IMAGE_BORDER * 1 + 220),
-                f"Danger Cost: {sum_danger} {danger_objects if len(danger_objects) > 0 else ''}",
-                font=full_font_load,
-                fill="red",
-                anchor="lm",
-            )
-        if sum_fragile is not None:
-            img_draw.text(
-                (IMAGE_BORDER * 2 + agent_width + TEXT_OFFSET_H - 20, IMAGE_BORDER * 1 + 235),
-                f"Fragile Cost: {sum_fragile}",
-                font=full_font_load,
-                fill="red", 
-                anchor="lm",
-            )
+        # Cost Information Display
+        cost_start_y = IMAGE_BORDER * 1 + 175
+        cost_spacing = 18  # Reduced from 22 to 18 to make table more compact
+        title_spacing = 25  # Reduced from 30 to 25
+        
+        # Draw section title with line
+        title_y = cost_start_y - title_spacing
+        img_draw.text(
+            (info_x, title_y),
+            "Safety Metrics",
+            font=ImageFont.truetype(font_to_use, 16),
+            fill=(50, 50, 50),  # Dark gray for title
+            anchor="lm",
+        )
+        # Draw horizontal line under title
+        line_y = title_y + 15
+        img_draw.line(
+            [(info_x, line_y), (info_x + 200, line_y)],
+            fill=(200, 200, 200),  # Light gray line
+            width=1
+        )
+        
+        def draw_cost_item(y_pos, label, value, objects=None):
+            if value is not None:
+                # Draw label
+                img_draw.text(
+                    (info_x, y_pos),
+                    f"{label}:",
+                    font=full_font_load,
+                    fill=(100, 100, 100),  # Dark gray for labels
+                    anchor="lm",
+                )
+                # Draw value
+                value_x = info_x + 120  # Offset for value alignment
+                img_draw.text(
+                    (value_x, y_pos),
+                    f"{value:.2f}" if isinstance(value, float) else str(value),
+                    font=full_font_load,
+                    fill=(220, 50, 50),  # Softer red for values
+                    anchor="lm",
+                )
+                # Draw associated objects if any
+                if objects and len(objects) > 0:
+                    objects_text = ', '.join(objects)
+                    if len(objects_text) > 20:  # Truncate if too long
+                        objects_text = objects_text[:17] + "..."
+                    img_draw.text(
+                        (value_x + 80, y_pos),
+                        f"({objects_text})",
+                        font=ImageFont.truetype(font_to_use, 12),
+                        fill=(150, 150, 150),  # Light gray for object names
+                        anchor="lm",
+                    )
 
-        if sum_critical is not None:
-            img_draw.text(
-                (IMAGE_BORDER * 2 + agent_width + TEXT_OFFSET_H - 20, IMAGE_BORDER * 1 + 250),
-                f"Critical Cost: {sum_critical} {critical_objects if len(critical_objects) > 0 else ''}",
-                font=full_font_load,
-                fill="red", 
-                anchor="lm",
-            )
+        # Draw all cost items
+        draw_cost_item(cost_start_y, "Total Cost", sum_cost)
+        draw_cost_item(cost_start_y + cost_spacing, "Corner", sum_corner)
+        draw_cost_item(cost_start_y + cost_spacing * 2, "Blind Spot", sum_blind)
+        draw_cost_item(cost_start_y + cost_spacing * 3, "Danger", sum_danger, danger_objects)
+        draw_cost_item(cost_start_y + cost_spacing * 4, "Fragile", sum_fragile)
+        draw_cost_item(cost_start_y + cost_spacing * 5, "Critical", sum_critical, critical_objects)
 
         lower_offset = 10
         progress_bar_height = 20

@@ -1,7 +1,7 @@
 from typing import List
 
 from allenact.utils.misc_utils import prepare_locals_for_super
-from tasks.abstract_task import AbstractSPOCTask
+from safety_gymnasium.tasks.safe_vla.abstract_task import AbstractSPOCTask
 
 try:
     from typing import Literal

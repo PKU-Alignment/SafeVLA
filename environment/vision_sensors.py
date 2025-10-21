@@ -9,7 +9,7 @@ from allenact.base_abstractions.task import EnvType, SubTaskType
 from allenact.utils.misc_utils import prepare_locals_for_super
 
 from environment.stretch_controller import StretchController
-from tasks import AbstractSPOCTask
+from safety_gymnasium.tasks.safe_vla.abstract_task import AbstractSPOCTask
 
 
 class RawRGBSensorTHOR(Sensor):

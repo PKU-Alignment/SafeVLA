@@ -22,7 +22,7 @@ from online_evaluation.online_evaluator_worker import (
     OnlineEvaluatorWorker,
     start_worker,
 )
-from tasks import REGISTERED_TASKS
+from safety_gymnasium.tasks.safe_vla import REGISTERED_TASKS
 from training.online.chores_dataset import ChoresDataset
 from utils.constants.objaverse_data_dirs import OBJAVERSE_HOUSES_DIR
 

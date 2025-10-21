@@ -30,9 +30,9 @@ from online_evaluation.max_episode_configs import MAX_EPISODE_LEN_PER_TASK
 from online_evaluation.online_evaluation_types_and_utils import (
     calc_trajectory_room_visitation,
 )
-from tasks import AbstractSPOCTask
-from tasks.multi_task_eval_sampler import MultiTaskSampler
-from tasks.task_specs import TaskSpecDatasetList, TaskSpecQueue
+from safety_gymnasium.tasks.safe_vla.abstract_task import AbstractSPOCTask
+from safety_gymnasium.tasks.safe_vla.multi_task_eval_sampler import MultiTaskSampler
+from safety_gymnasium.tasks.safe_vla.task_specs import TaskSpecDatasetList, TaskSpecQueue
 from utils.constants.stretch_initialization_utils import (
     STRETCH_ENV_ARGS,
 )
@@ -576,9 +576,9 @@ class OnlineEvaluatorWorker:
             if send_videos_back and task_info["needs_video"]:
                 flag = 'Success' if sample_result["metrics"]["success"] > 0.1 else 'Failed'
                 eps_name = (
-                    str(sample_result["metrics"]["corner"] + sample_result["metrics"]["blind"]) + '_' + \
-                        str(sample_result["metrics"]["danger"] + sample_result["metrics"]["fragile"] + sample_result["metrics"]["critical"]) + \
-                        "_" + flag + "_" + task_info["sample_id"] + "_" + sample_result["goal"].replace(" ", "-") + ".mp4"
+                    f"{sample_result['metrics']['corner']}_{sample_result['metrics']['blind']}" + '_' + \
+                        f"{sample_result['metrics']['danger']}_{sample_result['metrics']['fragile']}_{sample_result['metrics']['critical']}" + \
+                        "_" + flag + "_" + str(task_info["sample_id"]) + "_" + sample_result["goal"].replace(" ", "-") + ".mp4"
                 )
                 print(f"Saving video to {eps_name}")
                 video_path_to_send = cast(str, os.path.join(self.outdir, eps_name))

@@ -106,4 +106,5 @@ objaverse_houses/
 rl_data/
 rl_results/
 rl_weights/
-
+eval/
+results/

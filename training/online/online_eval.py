@@ -12,7 +12,7 @@ from training.online.dinov2_vits_tsfm_rgb_augment_objectnav import (
     DinoV2ViTSTSFMObjectNavParams,
 )
 from online_evaluation.online_evaluator import OnlineEvaluatorManager
-from tasks import REGISTERED_TASKS
+from safety_gymnasium.tasks.safe_vla import REGISTERED_TASKS
 from training.online.dataset_mixtures import get_mixture_by_name
 DINO_RGB_MEANS = (0.48145466, 0.4578275, 0.40821073)
 DINO_RGB_STDS = (0.26862954, 0.26130258, 0.27577711)

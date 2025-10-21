@@ -14,8 +14,8 @@ from allenact.base_abstractions.sensor import ExpertActionSensor, Sensor, Sensor
 from allenact.base_abstractions.task import TaskSampler
 from allenact.utils.experiment_utils import evenly_distribute_count_into_bins
 from environment.stretch_controller import StretchController
-from tasks.multi_task_eval_sampler import MultiTaskSampler
-from tasks.task_specs import TaskSpecDatasetList, TaskSpecSamplerInfiniteList
+from safety_gymnasium.tasks.safe_vla.multi_task_eval_sampler import MultiTaskSampler
+from safety_gymnasium.tasks.safe_vla.task_specs import TaskSpecDatasetList, TaskSpecSamplerInfiniteList
 from utils.constants.objaverse_data_dirs import OBJAVERSE_HOUSES_DIR
 from utils.constants.stretch_initialization_utils import (
     ALL_STRETCH_ACTIONS,
