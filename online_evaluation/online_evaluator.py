@@ -502,6 +502,7 @@ class OnlineEvaluatorManager:
                 tasks_queue=tasks_queue,
                 results_queue=results_queue,
                 tasks_list=tasks_list,
+                timestamp=timestamp,
             )
         else:
             for worker_id in self.workers:

@@ -228,6 +228,9 @@ def get_top_down_frame(controller, agent_path, target_ids):
 
 
 class VideoLogging:
+    # Class variable to track the previous frame's sum_cost
+    _previous_sum_cost = None
+    
     @staticmethod
     def get_video_frame(
         agent_frame: np.ndarray,
@@ -263,9 +266,104 @@ class VideoLogging:
             IMAGE_BORDER : IMAGE_BORDER + agent_height, IMAGE_BORDER : IMAGE_BORDER + agent_width, :
         ] = agent_frame
 
+        # Check if there's any NEW cost in current frame to determine if we need warnings
+        sum_cost = debug.get("sum_cost", None)
+        
+        # Determine if cost was triggered in the current frame
+        # by comparing with previous frame's sum_cost
+        has_cost = False
+        if sum_cost is not None:
+            # If this is the first frame (frame_number == 0), reset previous cost
+            if frame_number == 0:
+                VideoLogging._previous_sum_cost = 0
+            
+            # Check if cost increased from previous frame
+            previous_cost = VideoLogging._previous_sum_cost if VideoLogging._previous_sum_cost is not None else 0
+            has_cost = sum_cost > previous_cost
+            
+            # Update previous cost for next frame
+            VideoLogging._previous_sum_cost = sum_cost
+        
+        # Add red border around agent frame if cost is triggered
+        if has_cost:
+            border_width = 2  # Reduced from 5 to 3 for thinner border
+            # Draw red border on the agent frame area
+            # Image is in RGB format here, so red is (255, 0, 0)
+            cv2.rectangle(
+                image,
+                (IMAGE_BORDER - border_width, IMAGE_BORDER - border_width),
+                (IMAGE_BORDER + agent_width + border_width, IMAGE_BORDER + agent_height + border_width),
+                color=(255, 0, 0),  # Bright red in RGB format (R=255, G=0, B=0)
+                thickness=border_width
+            )
+            
+            # Add yellow warning triangles on each sensor view (nav and manip)
+            # Assuming agent_frame has two sensor views side by side
+            sensor_width = agent_width // 2
+            warning_size = 30  # Size of the warning triangle
+            
+            # Helper function to draw warning triangle
+            def draw_warning_triangle(img, x_offset, y_offset, size):
+                # Calculate triangle vertices (pointing up)
+                x_center = x_offset + size // 2
+                y_bottom = y_offset + size
+                y_top = y_offset
+                
+                # Triangle points
+                pt1 = (x_center, y_top)  # Top vertex
+                pt2 = (x_offset, y_bottom)  # Bottom left
+                pt3 = (x_offset + size, y_bottom)  # Bottom right
+                
+                # Note: img is in RGB format (not BGR), so Yellow is (255, 255, 0)
+                # Draw filled yellow triangle - RGB format: (R=255, G=255, B=0)
+                triangle_points = np.array([pt1, pt2, pt3])
+                
+                # Fill with yellow color in RGB
+                cv2.fillPoly(img, [triangle_points], color=(255, 255, 0))  # Yellow in RGB
+                
+                # Draw black border around triangle
+                cv2.polylines(img, [triangle_points], isClosed=True, color=(0, 0, 0), thickness=2)
+                
+                # Draw exclamation mark using PIL for better text rendering
+                pil_img = Image.fromarray(img)
+                draw = ImageDraw.Draw(pil_img)
+                
+                # Draw "!" symbol - centered and bold
+                font_size = int(size * 0.6)  # Larger font for better visibility
+                try:
+                    warning_font = ImageFont.truetype(font_to_use, font_size)
+                except:
+                    warning_font = ImageFont.load_default()
+                
+                # Center the exclamation mark properly
+                exclamation_x = x_center
+                exclamation_y = y_offset + size // 2 + 5  # Center vertically in triangle
+                
+                # Draw the exclamation mark multiple times to make it bold/thick
+                for dx in [-1, 0, 1]:
+                    for dy in [-1, 0, 1]:
+                        draw.text(
+                            (exclamation_x + dx, exclamation_y + dy),
+                            "!",
+                            font=warning_font,
+                            fill=(0, 0, 0),  # Black
+                            anchor="mm"
+                        )
+                
+                return np.array(pil_img)
+            
+            # Draw warning triangle on navigation view (left sensor, bottom-right corner)
+            nav_x = IMAGE_BORDER + sensor_width - warning_size - 10
+            nav_y = IMAGE_BORDER + agent_height - warning_size - 10
+            image = draw_warning_triangle(image, nav_x, nav_y, warning_size)
+            
+            # Draw warning triangle on manipulation view (right sensor, bottom-right corner)
+            manip_x = IMAGE_BORDER + agent_width - warning_size - 10
+            manip_y = IMAGE_BORDER + agent_height - warning_size - 10
+            image = draw_warning_triangle(image, manip_x, manip_y, warning_size)
+        
         text_image = Image.fromarray(image)
         img_draw = ImageDraw.Draw(text_image)
-        sum_cost = debug.get("sum_cost", None)
         sum_danger = debug.get("sum_danger", None)
         sum_corner = debug.get("sum_corner", None)
         sum_blind = debug.get("sum_blind", None)

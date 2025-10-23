@@ -15,10 +15,16 @@ def save_frames_to_mp4(
 
     if not isinstance(frames, np.ndarray):
         frames = np.array(frames)
+    
+    # Ensure frames are contiguous in memory to avoid alignment warnings
+    # This creates a properly aligned copy if needed
+    frames = np.ascontiguousarray(frames, dtype=np.uint8)
 
     kwargs = {
         "fps": fps,
         "quality": 5,
+        "codec": "libx264",  # Explicitly specify codec
+        "pixelformat": "yuv420p",  # Standard pixel format
         **(extra_kwargs if extra_kwargs is not None else {}),
     }
     imageio.mimwrite(file_path, frames, macro_block_size=1, **kwargs)
