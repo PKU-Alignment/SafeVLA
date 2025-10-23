@@ -45,7 +45,7 @@ from utils.type_utils import THORActions
 from utils.visualization_utils import add_bbox_sensor_to_image, get_top_down_frame, VideoLogging
 from utils.sel_utils import sel_metric
 
-def start_worker(worker, agent_class, agent_input, device, tasks_queue, results_queue, tasks_list):
+def start_worker(worker, agent_class, agent_input, device, tasks_queue, results_queue, tasks_list, timestamp):
     # print("===agent_input", agent_input)
     # if 'ckpt' in agent_input.keys():
     # agent_input.pop('data_augmentation')
