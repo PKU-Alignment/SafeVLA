@@ -17,7 +17,7 @@
 <hr style="border: 2px solid gray;"></hr>
 
 ## Latest Updates
-- [2025-09-18] Paper accepted: SafeVLA was accept as Neurips 2025 Spotlight!
+- [2025-09-18] Paper accepted: SafeVLA was accept as NeurIPS 2025 Spotlight!
 - [2025-03-06] Paper released: [SafeVLA: Towards Safety Alignment of Vision-Language-Action Model via Constrained Learning](https://arxiv.org/abs/2503.03480)
 - [2025-02-28] Initial release
 
