@@ -30,9 +30,12 @@ from online_evaluation.max_episode_configs import MAX_EPISODE_LEN_PER_TASK
 from online_evaluation.online_evaluation_types_and_utils import (
     calc_trajectory_room_visitation,
 )
-from safety_gymnasium.tasks.safe_vla.abstract_task import AbstractSPOCTask
-from safety_gymnasium.tasks.safe_vla.multi_task_eval_sampler import MultiTaskSampler
-from safety_gymnasium.tasks.safe_vla.task_specs import TaskSpecDatasetList, TaskSpecQueue
+# from safety_gymnasium.tasks.safe_vla.abstract_task import AbstractSPOCTask
+# from safety_gymnasium.tasks.safe_vla.multi_task_eval_sampler import MultiTaskSampler
+# from safety_gymnasium.tasks.safe_vla.task_specs import TaskSpecDatasetList, TaskSpecQueue
+from tasks.abstract_task import AbstractSPOCTask
+from tasks.multi_task_eval_sampler import MultiTaskSampler
+from tasks.task_specs import TaskSpecDatasetList, TaskSpecQueue
 from utils.constants.stretch_initialization_utils import (
     STRETCH_ENV_ARGS,
 )
@@ -46,9 +49,8 @@ from utils.visualization_utils import add_bbox_sensor_to_image, get_top_down_fra
 from utils.sel_utils import sel_metric
 
 def start_worker(worker, agent_class, agent_input, device, tasks_queue, results_queue, tasks_list, timestamp):
-    # print("===agent_input", agent_input)
-    # if 'ckpt' in agent_input.keys():
-    # agent_input.pop('data_augmentation')
+    if device != "cpu" and isinstance(device, int):
+        torch.cuda.set_device(device)
     agent = agent_class.build_agent(**agent_input, device=device)
     if hasattr(agent, "model"):
         agent.model.eval()
@@ -209,27 +211,30 @@ class OnlineEvaluatorWorker:
             task_args = get_core_task_args(max_steps=self.pre_defined_max_steps)
 
             add_extra_sensors_to_task_args(task_args, self.get_extra_sensors())
-
+            controller_args = {
+                **STRETCH_ENV_ARGS,
+                "platform": (
+                    ai2thor.platform.OSXIntel64
+                    if sys.platform.lower() == "darwin"
+                    else ai2thor.platform.CloudRendering
+                ),
+            }
+            if sys.platform.lower() != "darwin" and self.gpu_device != "cpu":
+                gpu_id = self.gpu_device if isinstance(self.gpu_device, int) else 0
+                controller_args["x_display"] = f":{gpu_id}"
             self._task_sampler = MultiTaskSampler(
                 mode="val",
                 task_args=task_args,
                 houses=self.houses,
                 house_inds=list(range(len(self.houses))),
-                controller_args={
-                    **STRETCH_ENV_ARGS,
-                    "platform": (
-                        ai2thor.platform.OSXIntel64
-                        if sys.platform.lower() == "darwin"
-                        else ai2thor.platform.CloudRendering
-                    ),
-                },
+                controller_args=controller_args,
                 controller_type=StretchController,
                 task_spec_sampler=TaskSpecDatasetList(
                     []
                 ),  # Will be overwritten in distribute_evaluate
                 visualize=False,
                 # prob_randomize_materials=0,
-                device=self.gpu_device if self.gpu_device == "cpu" or self.gpu_device > 0 else None,
+                device=self.gpu_device if (self.gpu_device == "cpu" or isinstance(self.gpu_device, int)) else None,
                 prob_randomize_lighting=self.prob_randomize_lighting,
                 prob_randomize_materials=self.prob_randomize_materials,
                 prob_randomize_colors=self.prob_randomize_colors,

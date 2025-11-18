@@ -27,7 +27,8 @@ class DinoViTEmbedder(nn.Module):
             x = x.reshape(B, D, 16, 27)
             x = self.pool(x)
             return x
-
+    def get_device(self):
+        return next(self.model.parameters()).device
 
 class DinoViTPreprocessor(Preprocessor):
     DINO_RGB_MEANS = (0.48145466, 0.4578275, 0.40821073)

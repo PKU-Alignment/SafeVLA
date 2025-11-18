@@ -24,7 +24,8 @@ from utils.type_utils import get_task_relevant_synsets
 import random
 
 if TYPE_CHECKING:
-    from safety_gymnasium.tasks.safe_vla.abstract_task import AbstractSPOCTask
+    # from safety_gymnasium.tasks.safe_vla.abstract_task import AbstractSPOCTask
+    from tasks.abstract_task import AbstractSPOCTask
 else:
     from typing import TypeVar
 

@@ -3,7 +3,6 @@ import random
 from functools import lru_cache
 from typing import Any, Dict
 
-import prior
 from nltk.corpus import wordnet2022 as wn
 
 from utils.constants.object_constants import AI2THOR_OBJECT_TYPE_TO_WORDNET_SYNSET
@@ -23,12 +22,6 @@ from utils.type_utils import REGISTERED_TASK_PARAMS
 
 PHYSICAL_ENTITY_SYNSET = wn.synset("physical_entity.n.01")
 
-# SYNSET_TO_BEST_LEMMA = prior.load_dataset(
-#     dataset="spoc-data",
-#     entity="spoc-robot",
-#     revision="objaverse-annotation-plus",
-#     which_dataset="synset_to_best_lemma",
-# )["train"].data
 SYNSET_TO_BEST_LEMMA = json.load(open("utils/synset_to_best_lemma.json", "r"))
 
 

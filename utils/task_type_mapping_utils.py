@@ -2,7 +2,8 @@ import copy
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from safety_gymnasium.tasks.safe_vla.task_specs import TaskSpec
+    # from safety_gymnasium.tasks.safe_vla.task_specs import TaskSpec
+    from tasks.task_specs import TaskSpec
 
 
 def map_task_type(task_type: str) -> str:

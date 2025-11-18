@@ -12,7 +12,8 @@ from training.online.dinov2_vits_tsfm_rgb_augment_objectnav import (
     DinoV2ViTSTSFMObjectNavParams,
 )
 from online_evaluation.online_evaluator import OnlineEvaluatorManager
-from safety_gymnasium.tasks.safe_vla import REGISTERED_TASKS
+# from safety_gymnasium.tasks.safe_vla import REGISTERED_TASKS
+from tasks import REGISTERED_TASKS
 from training.online.dataset_mixtures import get_mixture_by_name
 DINO_RGB_MEANS = (0.48145466, 0.4578275, 0.40821073)
 DINO_RGB_STDS = (0.26862954, 0.26130258, 0.27577711)
@@ -41,7 +42,7 @@ def parse_args():
     parser.add_argument("--wandb_project_name", type=str, default="")
     parser.add_argument("--wandb_entity_name", type=str, default="")
     parser.add_argument("--training_run_id", type=str)
-    parser.add_argument("--ckpt_path", default="/net/nfs2.prior/checkpoints/")
+    parser.add_argument("--ckpt_path", default="")
     parser.add_argument("--max_eps_len", default=-1, type=int)
     parser.add_argument("--eval_set_size", default=None, type=int)
     parser.add_argument("--greedy", action="store_true", default=False)
@@ -88,18 +89,6 @@ def get_eval_run_name(args):
 
     if args.extra_tag != "":
         exp_name.append(f"{args.extra_tag}")
-
-    # exp_name.extend(
-    #     [
-    #         f"training_run_id={args.training_run_id}",
-    #         f"eval_dataset={args.dataset_type}",
-    #         f"eval_subset={args.eval_subset}",
-    #         f"shuffle={args.shuffle}",
-    #         f"greedy_sampling={args.greedy}",
-    #         f"test_augmentation={args.test_augmentation}",
-    #     ]
-    # )
-
     return "-".join(exp_name)
 
 

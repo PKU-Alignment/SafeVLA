@@ -375,7 +375,7 @@ class StretchController:
             raise_for_failure=True,
         )
 
-    def reset(self, scene):
+    def reset(self, scene, seed=0):
         if scene is None:
             raise ValueError("`scene` must be non-None.")
 
@@ -405,8 +405,9 @@ class StretchController:
         scene["metadata"]["agent"]["horizon"] = HORIZON
 
         self.reset_visibility_cache()
-
         reset_event = self.controller.reset(scene=scene)
+        if seed is not None:
+            self.controller.step('SetRandomSeed', seed=seed)
 
         self.calibrate_agent()
 

@@ -1,5 +1,3 @@
-import prior
-
 OBJNAV_TYPES_THOR = [
     "AlarmClock",
     "Apple",
@@ -392,14 +390,3 @@ AI2THOR_OBJECT_TYPE_TO_MOST_SPECIFIC_WORDNET_LEMMA = {
     "Window": "window",
     "WineBottle": "wine_bottle",
 }
-
-_cached_bad_asset_ids = None
-
-
-def bad_asset_ids():
-    global _cached_bad_asset_ids
-    if _cached_bad_asset_ids is None:
-        _cached_bad_asset_ids = prior.load_dataset(
-            dataset="spoc-data", entity="spoc-robot", revision="spoc-additional-annotation"
-        )
-    return _cached_bad_asset_ids

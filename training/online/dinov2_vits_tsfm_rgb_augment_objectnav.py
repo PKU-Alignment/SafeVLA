@@ -73,8 +73,8 @@ class DinoV2ViTSTSFMObjectNavParams(BaseConfigParams):
     rgb_width: int = 384
 
     # training pipeline params
-    save_interval: int = 2_500_000
-    metric_accumulate_interval: int = 10_000
+    save_interval: int = 10_000
+    metric_accumulate_interval: int = 1_000
 
     # overwrite the BaseConfigParams tag
     tag: str = "SafeVLA-ObjectNavType-RL-DinoV2-ViTS-TSFM"
@@ -209,7 +209,6 @@ class DinoV2ViTSTSFMObjectNav(BaseConfig):
         )
 
         if self.params.use_sep_critic:
-            # model_init_func = DinoLLAMATxNavActorCriticSeparate
             model_init_func = SafeDinoLLAMATxNavActorCriticSeparate
         else:
             model_init_func = DinoLLAMATxNavActorCritic
@@ -310,7 +309,6 @@ class DinoV2ViTSTSFMObjectNav(BaseConfig):
             named_losses={"ppo_log_loss": SafePPOLogGrad(**NewPPOConfig),
                         "ppo_value_loss": PPOValue(clip_param=0.1, use_clipped_value_loss=False),
                         "safe_ppo_value_loss": SafePPOValue(clip_param=0.1, use_clipped_value_loss=False),},
-                        # "safe_ppo_value_loss": SafePPOValue(clip_param=0.1, use_clipped_value_loss=False)},
             gamma=0.99,
             use_gae=True,
             gae_lambda=0.95,

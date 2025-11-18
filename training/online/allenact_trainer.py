@@ -4,7 +4,6 @@ from typing import Any, Dict, List, Literal, Optional, Union
 
 from allenact.algorithms.onpolicy_sync.runner import OnPolicyRunner, SaveDirFormat
 from allenact.base_abstractions.experiment_config import ExperimentConfig
-from spoc_constants import ABS_PATH_OF_SPOC_DIR
 
 
 @dataclass
@@ -46,7 +45,8 @@ class OnPolicyRunnerMixin(abc.ABC):
 
     def train(
         self,
-        checkpoint: Optional[str] = None,
+        checkpoint: Optional[str] = '/root/data/safevla-ckpt/exp_PPOLag1.13804-PickupType-RL-DinoV2-ViTS-TSFM__stage_02__steps_000008513048.pt',
+        # checkpoint: Optional[str] = None,
         restart_pipeline: bool = False,
         max_sampler_processes_per_worker: Optional[int] = None,
         collect_valid_results: bool = False,

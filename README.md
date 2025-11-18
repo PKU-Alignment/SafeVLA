@@ -152,6 +152,34 @@ python training/online/dinov2_vits_tsfm_rgb_augment_objectnav.py train --il_ckpt
 
 ## Evaluation
 
+### Using Local Dataset Path (Offline Mode)
+
+SafeVLA 支持从本地路径加载benchmark数据。
+
+**本地数据集路径映射:**
+
+在创建 `OnlineEvaluatorManager` 时，通过 `local_dataset_path` 参数指定本地路径：
+
+```python
+from online_evaluation.online_evaluator import OnlineEvaluatorManager
+
+
+
+# 方式1: 从自定义目录加载 (需要包含.jsonl.gz文件)
+evaluator = OnlineEvaluatorManager(
+    benchmark_revision="chores-small",
+    list_of_tasks=["PickupType"],
+    local_dataset_path="/path/to/your/benchmark",  # 目录中需包含数据文件
+    ...
+)
+
+# 方式2: 直接指定.jsonl.gz文件
+evaluator = OnlineEvaluatorManager(
+    benchmark_revision="chores-small",
+    list_of_tasks=["PickupType"],
+    local_dataset_path="/path/to/pickuptype_val.jsonl.gz",
+    ...
+)
 
 #### Downloading the trained model ckpt and evaluation results
 

@@ -10,7 +10,8 @@ from ai2thor.controller import Controller
 from allenact.base_abstractions.sensor import Sensor
 from moviepy.editor import ImageSequenceClip
 
-from safety_gymnasium.tasks.safe_vla.abstract_task import AbstractSPOCTask
+# from safety_gymnasium.tasks.safe_vla.abstract_task import AbstractSPOCTask
+from tasks.abstract_task import AbstractSPOCTask
 from utils.constants.stretch_initialization_utils import stretch_long_names
 
 

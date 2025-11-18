@@ -3,12 +3,12 @@ import os
 import platform
 import random
 import time
+import gzip
 from collections import defaultdict
 from queue import Empty as EmptyQueueError
-from typing import List, Dict
+from typing import List, Dict, Optional, Any
 from datetime import datetime
 import pandas as pd
-import prior
 import torch
 
 from online_evaluation.online_evaluation_types_and_utils import (
@@ -22,9 +22,11 @@ from online_evaluation.online_evaluator_worker import (
     OnlineEvaluatorWorker,
     start_worker,
 )
-from safety_gymnasium.tasks.safe_vla import REGISTERED_TASKS
+# from safety_gymnasium.tasks.safe_vla import REGISTERED_TASKS
+from tasks import REGISTERED_TASKS
 from training.online.chores_dataset import ChoresDataset
 from utils.constants.objaverse_data_dirs import OBJAVERSE_HOUSES_DIR
+from utils.data_utils import LazyJsonDataset, load_dataset_from_path, DatasetDict
 
 mp = mp.get_context("forkserver") if torch.cuda.is_available() else mp.get_context("spawn")
 LOG_INTERMEDIATE_RESULTS = True
@@ -126,12 +128,6 @@ def log_results(
             for k in columns:
                 if k not in tab_data:
                     item_to_add = -1
-                # elif k == "video_path":
-                #     item_to_add = wandb.Video(tab_data["video_path"]) if upload_video else "None"
-                # elif k == "topdown_view_path":
-                #     item_to_add = (
-                #         wandb.Image(tab_data["topdown_view_path"]) if upload_video else "None"
-                #     )
                 else:
                     item_to_add = tab_data[k]
                 row.append(item_to_add)
@@ -248,7 +244,7 @@ class OnlineEvaluatorManager:
         self.prob_randomize_materials = prob_randomize_materials
         self.prob_randomize_colors = prob_randomize_colors
         os.makedirs(self.outdir, exist_ok=self.exist_ok)
-
+        self.local_dataset_path="/root/pr/SafeVLA/benchmark"
         self.WorkerType = OnlineEvaluatorWorker
 
         self.logging_sensor = VideoLogging()
@@ -264,8 +260,6 @@ class OnlineEvaluatorManager:
             self.houses = self.load_procthor_houses()
         elif self.house_set == "objaverse":
             self.houses = self.load_objaverse_houses()
-        elif self.house_set == "phone2proc":
-            self.houses = self.load_phone2proc_houses()
         else:
             raise Exception("house_set not recognized", self.house_set)
 
@@ -290,23 +284,72 @@ class OnlineEvaluatorManager:
         all_task_samples = {}
         # Make a dictionary of tasks to list of samples
         for task in list_of_tasks:
-            all_task_samples[task] = self.load_minival_eval_samples_per_task(task)
+            all_task_samples[task] = self.load_minival_eval_samples_per_task(
+                task, 
+                use_local_path=self.local_dataset_path
+            )
         return all_task_samples
 
-    def load_minival_eval_samples_per_task(self, task_type: str) -> List[NormalizedEvalSample]:
-        # TODO: This can be more efficient by reading first and then dividing.
-
-        if self.benchmark_revision not in ["chores-small", "chores-large"]:
-            EVAL_TASKS = prior.load_dataset(
-                dataset="vida-benchmark",
-                revision=self.benchmark_revision,
-                task_types=[inverse_map_task_type(task_type)],
-            )
+    def _load_dataset_from_local_path(
+        self, 
+        local_path: str, 
+        task_types: Optional[List[str]] = None,
+    ):
+        if not os.path.exists(local_path):
+            raise FileNotFoundError(f"Local path does not exist: {local_path}")
+        
+        print(f"Loading dataset from local path: {local_path}")
+        if os.path.isdir(local_path):
+            data_files = []
+            if task_types is not None:
+                for task_type in task_types:
+                    patterns = [
+                        f"{task_type.lower()}_val.jsonl.gz",
+                        f"{task_type.lower()}.jsonl.gz",
+                    ]
+                    
+                    for pattern in patterns:
+                        filepath = os.path.join(local_path, pattern)
+                        if os.path.exists(filepath):
+                            data_files.append(filepath)
+                            print(f"  Found data file: {pattern}")
+                            break
+            else:
+                for file in os.listdir(local_path):
+                    if file.endswith('.jsonl.gz'):
+                        data_files.append(os.path.join(local_path, file))
+            
+            if not data_files:
+                raise FileNotFoundError(
+                    f"No matching .jsonl.gz file found in {local_path}\n"
+                    f"Task types: {task_types}"
+                )
+        elif local_path.endswith('.jsonl.gz'):
+            data_files = [local_path]
         else:
-            EVAL_TASKS = prior.load_dataset(
-                dataset="spoc-data",
-                entity="spoc-robot",
-                revision=self.benchmark_revision,
+            raise ValueError(f"Path must be a directory or .jsonl.gz file: {local_path}")
+        from tqdm import tqdm
+        split_task_list = []
+        for data_file in data_files:
+            print(f"  Loading file: {os.path.basename(data_file)}")
+            with gzip.open(data_file, "rt") as f:
+                tasks = [line for line in tqdm(f, desc=f"Loading {os.path.basename(data_file)}")]
+                split_task_list.extend(tasks)
+        print(f"  Total loaded {len(split_task_list)} task samples")
+        data = {
+            "val": LazyJsonDataset(data=split_task_list)
+        }
+        return DatasetDict(**data)
+
+    def load_minival_eval_samples_per_task(
+        self, 
+        task_type: str,
+        use_local_path: Optional[str] = None
+    ) -> List[NormalizedEvalSample]:
+
+        if use_local_path is not None:
+            EVAL_TASKS = self._load_dataset_from_local_path(
+                local_path=use_local_path,
                 task_types=[inverse_map_task_type(task_type)],
             )
 
@@ -348,19 +391,24 @@ class OnlineEvaluatorManager:
         return {task_type: [samples[i] for i in sample_ids]}
 
     def load_procthor_houses(self):
+        local_houses_path = os.path.join(self.local_dataset_path, "houses")
+        
+        houses_path = None
+        if os.path.exists(local_houses_path):
+            houses_path = local_houses_path
+        if houses_path is None:
+            raise FileNotFoundError(
+                f"Could not find houses data. Please check the following paths:\n" 
+                f"  {local_houses_path}\n"
+                f"Please prepare the houses data file (containing .jsonl.gz files in val/train/test directories)"
+            )
         if self.eval_subset in ["val", "minival"]:
-            return prior.load_dataset(
-                dataset="spoc-data", entity="spoc-robot", revision="houses-test-val"
-            )["val"]
+            subset = "val"
         else:
-            return prior.load_dataset(
-                dataset="spoc-data", entity="spoc-robot", revision="houses-test-val"
-            )[self.eval_subset]
-
-    def load_phone2proc_houses(self):
-        return prior.load_dataset(
-            dataset="all-back-apartment-data",
-        )["val"]
+            subset = self.eval_subset
+        
+        houses_data = load_dataset_from_path(path_to_splits=houses_path)
+        return houses_data[subset]
 
     def log_data_stat(self, task_type, samples):
         distribution_dict = {}
@@ -407,20 +455,18 @@ class OnlineEvaluatorManager:
         else:
             subset_to_load = self.eval_subset
 
-        max_houses_per_split = {"train": 0, "val": 0, "test": 0}
-
-        max_houses_per_split[subset_to_load] = int(1e9)
-        return prior.load_dataset(
-            dataset="spoc-data",
-            entity="spoc-robot",
-            revision="local-objaverse-procthor-houses",
-            path_to_splits=None,
-            split_to_path={
-                k: os.path.join(OBJAVERSE_HOUSES_DIR, f"{k}.jsonl.gz")
-                for k in ["train", "val", "test"]
-            },
-            max_houses_per_split=max_houses_per_split,
-        )[subset_to_load]
+        print(f"Loading objaverse houses from: {OBJAVERSE_HOUSES_DIR}")
+        
+        split_to_path = {
+            subset_to_load: os.path.join(OBJAVERSE_HOUSES_DIR, f"{subset_to_load}.jsonl.gz")
+        }
+        
+        houses_data = load_dataset_from_path(
+            split_to_path=split_to_path,
+            max_items_per_split={subset_to_load: int(1e9)}
+        )
+        
+        return houses_data[subset_to_load]
 
     def log_benchmark_stat(self):
         for task_type, samples in self.eval_samples.items():

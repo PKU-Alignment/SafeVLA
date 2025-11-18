@@ -290,8 +290,8 @@ class DinoLLAMATxNavActorCritic(VisualNavActorCritic):
         import wandb
 
         api = wandb.Api()
-        wandb_entity_name = "prior-ai2"
-        wandb_project_name = "ilearn_rl"
+        wandb_entity_name = ""
+        wandb_project_name = ""
 
         on_server = torch.cuda.is_available()
         if on_server:

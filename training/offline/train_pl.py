@@ -34,8 +34,8 @@ def arg_parser_for_offline_training():
     parser.add_argument("--eval_every", type=int, default=500)
     parser.add_argument("--wandb_logging", default=True, type=str2bool)
 
-    parser.add_argument("--wandb_project_name", default="ilearn_rl", type=str)
-    parser.add_argument("--wandb_entity_name", default="prior-ai2", type=str)
+    parser.add_argument("--wandb_project_name", default="", type=str)
+    parser.add_argument("--wandb_entity_name", default="", type=str)
     parser.add_argument("--save_every", type=int, default=2000)
     parser.add_argument("--log_video_every", type=int, default=2000)
     parser.add_argument("--max_epochs", type=int, default=250)

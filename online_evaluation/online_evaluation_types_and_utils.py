@@ -8,7 +8,8 @@ from utils.task_type_mapping_utils import map_task_type, map_task_spec
 from utils.type_utils import REGISTERED_TASK_PARAMS
 
 if TYPE_CHECKING:
-    from safety_gymnasium.tasks.safe_vla.task_specs import TaskSpec
+    # from safety_gymnasium.tasks.safe_vla.task_specs import TaskSpec
+    from tasks.task_specs import TaskSpec
 
 
 class EvalSample(TypedDict):

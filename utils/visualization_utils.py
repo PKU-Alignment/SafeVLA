@@ -376,17 +376,61 @@ class VideoLogging:
         
         # Removed camera seen objects display for cleaner visualization
         if action_dist is not None:
-            for i, (prob, action) in enumerate(zip(action_dist, action_names)):
+            # Define navigation and manipulation actions
+            navigation_actions = {
+                "move_ahead", "move_back", "rotate_left", "rotate_right",
+                "rotate_left_small", "rotate_right_small", "done", "sub_done"
+            }
+            manipulation_actions = {
+                "move_arm_up", "move_arm_down", "move_arm_in", "move_arm_out",
+                "move_arm_up_small", "move_arm_down_small", "move_arm_in_small", "move_arm_out_small",
+                "wrist_open", "wrist_close", "pickup", "dropoff"
+            }
+            
+            # Determine task type from task description
+            task_desc_lower = task_desc.lower()
+            is_objnav = "objnav" in task_desc_lower or "objectnav" in task_desc_lower
+            is_pickup = "pickup" in task_desc_lower
+            is_fetch = "fetch" in task_desc_lower
+            
+            # Separate actions into navigation and manipulation groups
+            nav_actions_data = []
+            manip_actions_data = []
+            
+            for prob, action in zip(action_dist, action_names):
                 try:
                     action_long_name = stretch_long_names[action]
                 except KeyError:
                     action_long_name = action
-                if i < 10:
+                
+                if action_long_name in navigation_actions:
+                    nav_actions_data.append((prob, action, action_long_name))
+                elif action_long_name in manipulation_actions:
+                    manip_actions_data.append((prob, action, action_long_name))
+                else:
+                    # Fallback for unknown actions
+                    nav_actions_data.append((prob, action, action_long_name))
+            
+            # Shorter bar width for cleaner visualization
+            bar_width = 60  # Reduced from 100
+            
+            # Draw section titles and actions based on task type
+            title_font = ImageFont.truetype(font_to_use, 12)
+            
+            if is_objnav:
+                # ObjectNav: only show navigation
+                img_draw.text(
+                    (action_x, TEXT_OFFSET_V - 15),
+                    "Navigation",
+                    font=title_font,
+                    fill=(50, 50, 150),  # Dark blue
+                    anchor="rm",
+                )
+                
+                # Draw navigation actions
+                for i, (prob, action, action_long_name) in enumerate(nav_actions_data):
                     img_draw.text(
-                    (
-                        action_x,
-                        (TEXT_OFFSET_V + 5) + i * 10,
-                    ),
+                        (action_x, (TEXT_OFFSET_V + 5) + i * 10),
                         action_long_name,
                         font=ImageFont.truetype(font_to_use, 10),
                         fill="gray" if action != taken_action else "black",
@@ -396,18 +440,27 @@ class VideoLogging:
                         (
                             action_x + 5,
                             TEXT_OFFSET_V + i * 10,
-                            IMAGE_BORDER * 2 + agent_width + (TEXT_OFFSET_H + 5) + int(100 * prob),
+                            action_x + 5 + int(bar_width * prob),
                             (TEXT_OFFSET_V + 5) + i * 10,
                         ),
                         outline="blue",
                         fill="blue",
                     )
-                else:
+            
+            elif is_pickup:
+                # Pickup: only show manipulation
+                img_draw.text(
+                    (action_x, TEXT_OFFSET_V - 15),
+                    "Manipulation",
+                    font=title_font,
+                    fill=(150, 50, 50),  # Dark red
+                    anchor="rm",
+                )
+                
+                # Draw manipulation actions
+                for i, (prob, action, action_long_name) in enumerate(manip_actions_data):
                     img_draw.text(
-                        (
-                            action_x + 200,
-                            (TEXT_OFFSET_V + 5) + (i - 10) * 10,
-                        ),
+                        (action_x, (TEXT_OFFSET_V + 5) + i * 10),
                         action_long_name,
                         font=ImageFont.truetype(font_to_use, 10),
                         fill="gray" if action != taken_action else "black",
@@ -415,13 +468,97 @@ class VideoLogging:
                     )
                     img_draw.rectangle(
                         (
-                            action_x + 205,
-                            TEXT_OFFSET_V + (i - 10) * 10,
-                            IMAGE_BORDER * 2
-                            + agent_width
-                            + (TEXT_OFFSET_H + 205)
-                            + int(100 * prob),
-                            (TEXT_OFFSET_V + 5) + (i - 10) * 10,
+                            action_x + 5,
+                            TEXT_OFFSET_V + i * 10,
+                            action_x + 5 + int(bar_width * prob),
+                            (TEXT_OFFSET_V + 5) + i * 10,
+                        ),
+                        outline="red",
+                        fill="red",
+                    )
+            
+            elif is_fetch:
+                # Fetch: show both navigation (left) and manipulation (right) side by side
+                column_spacing = 90  # Space between two columns
+                
+                # Navigation title and actions (left)
+                img_draw.text(
+                    (action_x, TEXT_OFFSET_V - 15),
+                    "Navigation",
+                    font=title_font,
+                    fill=(50, 50, 150),  # Dark blue
+                    anchor="rm",
+                )
+                
+                for i, (prob, action, action_long_name) in enumerate(nav_actions_data):
+                    img_draw.text(
+                        (action_x, (TEXT_OFFSET_V + 5) + i * 10),
+                        action_long_name,
+                        font=ImageFont.truetype(font_to_use, 10),
+                        fill="gray" if action != taken_action else "black",
+                        anchor="rm",
+                    )
+                    img_draw.rectangle(
+                        (
+                            action_x + 5,
+                            TEXT_OFFSET_V + i * 10,
+                            action_x + 5 + int(bar_width * prob),
+                            (TEXT_OFFSET_V + 5) + i * 10,
+                        ),
+                        outline="blue",
+                        fill="blue",
+                    )
+                
+                # Manipulation title and actions (right)
+                manip_x = action_x + column_spacing
+                img_draw.text(
+                    (manip_x, TEXT_OFFSET_V - 15),
+                    "Manipulation",
+                    font=title_font,
+                    fill=(150, 50, 50),  # Dark red
+                    anchor="rm",
+                )
+                
+                for i, (prob, action, action_long_name) in enumerate(manip_actions_data):
+                    img_draw.text(
+                        (manip_x, (TEXT_OFFSET_V + 5) + i * 10),
+                        action_long_name,
+                        font=ImageFont.truetype(font_to_use, 10),
+                        fill="gray" if action != taken_action else "black",
+                        anchor="rm",
+                    )
+                    img_draw.rectangle(
+                        (
+                            manip_x + 5,
+                            TEXT_OFFSET_V + i * 10,
+                            manip_x + 5 + int(bar_width * prob),
+                            (TEXT_OFFSET_V + 5) + i * 10,
+                        ),
+                        outline="red",
+                        fill="red",
+                    )
+            
+            else:
+                # Default: show all actions in original format (for unknown task types)
+                for i, (prob, action) in enumerate(zip(action_dist, action_names)):
+                    try:
+                        action_long_name = stretch_long_names[action]
+                    except KeyError:
+                        action_long_name = action
+                    
+                    img_draw.text(
+                        (action_x, (TEXT_OFFSET_V + 5) + i * 10),
+                        action_long_name,
+                        font=ImageFont.truetype(font_to_use, 10),
+                        fill="gray" if action != taken_action else "black",
+                        anchor="rm",
+                    )
+                    img_draw.rectangle(
+                        (
+                            action_x + 5,
+                            TEXT_OFFSET_V + i * 10,
+                            action_x + 5 + int(bar_width * prob),
+                            (TEXT_OFFSET_V + 5) + i * 10,
                         ),
                         outline="blue",
                         fill="blue",
