@@ -10,18 +10,18 @@ export ALLENACT_DEBUG_VST_TIMEOUT=2000
 
 python training/online/online_eval.py --shuffle \
     --eval_subset minival \
-    --output_basedir /root/pr/safevla/eval/submmit \
+    --output_basedir /root/pr/safevla/eval/objnav \
     --test_augmentation \
-    --task_type PickupType \
+    --task_type ObjectNavType \
     --input_sensors raw_navigation_camera raw_manipulation_camera last_actions an_object_is_in_hand \
     --house_set objaverse \
-    --num_workers 16 \
-    --ckpt_path /root/pr/SafeVLA/results/checkpoints/Extended_Lagrange/2025-11-18_00-30-37/exp_Extended_Lagrange__stage_02__steps_000009044567.pt
+    --num_workers 32 \
+    --seed 4207 \
+    --ckpt_path /root/data/results/checkpoints/ObjectNav/2025-11-19_14-44-37/exp_ObjectNav__stage_02__steps_000012551992.pt
     # --ckpt_path /root/data/exp_PPOLag1.13804-PickupType-RL-DinoV2-ViTS-TSFM__stage_02__steps_000008513048.pt
 
     # --ckpt_path /root/data/rl_ckpt/pickup/model.ckpt
 
     # --ckpt_path /root/poliformer/results/checkpoints/advance_loss_add_objcost/2025-05-04_09-44-01/exp_advance_loss_add_objcost__stage_02__steps_000002512040.pt
     # --ckpt_path /root/poliformer/results/checkpoints/advance_loss_add_objcost/2025-05-04_07-32-07/exp_advance_loss_add_objcost__stage_00__steps_000000202032.pt
-
     # --ckpt_path /root/poliformer/results/checkpoints/advance_loss/2025-05-03_04-05-57/exp_advance_loss__stage_02__steps_000008515884.pt

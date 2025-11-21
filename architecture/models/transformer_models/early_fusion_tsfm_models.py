@@ -1,33 +1,35 @@
+import json
 from typing import Type
 
 import numpy as np
 from open_clip.tokenizer import HFTokenizer
 from open_clip.transformer import TextTransformer
-import json
+
 from architecture.models.transformer_models.image_encoders import *
-from architecture.models.transformer_models.preprocessors import (
-    Preprocessor,
-    PreprocessorConfig,
-    tensor_image_preprocessor,
-    SigLipPreprocessorConfig,
-    SigLipPreprocessor,
-)
-from architecture.models.transformer_models.text_cond_visual_encoder import (
-    PositionalEncoder,
-    TextCondMultiCameraVisualEncoder,
-    TextCondVisualEncoderConfig,
-    NonTxMultiCameraVisualEncoder,
-    NonTxVisualEncoderConfig,
-    TransformerConfig,
+from architecture.models.transformer_models.llama_model import (
+    ModelArgs as LLAMAModelArgs,
 )
 from architecture.models.transformer_models.llama_model import (
     TransformerDecoder as LLAMATransformerDecoder,
 )
-from architecture.models.transformer_models.llama_model import ModelArgs as LLAMAModelArgs
+from architecture.models.transformer_models.preprocessors import (
+    Preprocessor,
+    PreprocessorConfig,
+    SigLipPreprocessor,
+    SigLipPreprocessorConfig,
+    tensor_image_preprocessor,
+)
+from architecture.models.transformer_models.text_cond_visual_encoder import (
+    NonTxVisualEncoderConfig,
+    PositionalEncoder,
+    TextCondMultiCameraVisualEncoder,
+    TextCondVisualEncoderConfig,
+    TransformerConfig,
+)
 from training.offline.train_utils import load_pl_ckpt
 from utils.constants.stretch_initialization_utils import ALL_STRETCH_ACTIONS
 from utils.nn_utils import create_causal_mask, sample_action_index_from_logits
-from utils.sensor_constant_utils import is_a_visual_sensor, is_a_non_visual_sensor
+from utils.sensor_constant_utils import is_a_non_visual_sensor, is_a_visual_sensor
 
 EarlyFusionCnnTransformerPreprocessorConfig = PreprocessorConfig
 EarlyFusionCnnTransformerPreprocessor = Preprocessor
@@ -324,10 +326,10 @@ class EarlyFusionCnnTransformer(nn.Module):
         preproc_cfg.data_augmentation = data_augmentation
         preproc_cfg.augmentation_version = "v2"
         preproc = preprocessor_type(cfg=preproc_cfg, device="cpu")
-        with open ('data.json', 'w') as file:
-            json.dump(model_cfg, file, indent = 4)
-            json.dump(preproc_cfg, file, indent = 4)
-        
+        with open("data.json", "w") as file:
+            json.dump(model_cfg, file, indent=4)
+            json.dump(preproc_cfg, file, indent=4)
+
         return model, preproc
 
     @classmethod
@@ -341,7 +343,9 @@ class EarlyFusionCnnTransformer(nn.Module):
         data_augmentation,
         ckpt_pth=None,
     ):
-        model, preproc = cls.build_model(model_version, input_sensors, loss, data_augmentation, ckpt_pth)
+        model, preproc = cls.build_model(
+            model_version, input_sensors, loss, data_augmentation, ckpt_pth
+        )
         return EarlyFusionCnnTransformerAgent(model, preproc, device, sampling)
 
 
@@ -372,7 +376,7 @@ class EarlyFusionCnnTransformerAgent:
                 (0.5, 0.5, 0.5)
                 if isinstance(self.model.visual_encoder.image_encoder, SigLIP)
                 else (0.26862954, 0.26130258, 0.27577711)
-            )
+            ),
             # img_pad=self.preprocessor.cfg.img_pad,
         )
         self.cache = dict()

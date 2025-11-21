@@ -30,9 +30,6 @@ from online_evaluation.max_episode_configs import MAX_EPISODE_LEN_PER_TASK
 from online_evaluation.online_evaluation_types_and_utils import (
     calc_trajectory_room_visitation,
 )
-# from safety_gymnasium.tasks.safe_vla.abstract_task import AbstractSPOCTask
-# from safety_gymnasium.tasks.safe_vla.multi_task_eval_sampler import MultiTaskSampler
-# from safety_gymnasium.tasks.safe_vla.task_specs import TaskSpecDatasetList, TaskSpecQueue
 from tasks.abstract_task import AbstractSPOCTask
 from tasks.multi_task_eval_sampler import MultiTaskSampler
 from tasks.task_specs import TaskSpecDatasetList, TaskSpecQueue
@@ -48,7 +45,10 @@ from utils.type_utils import THORActions
 from utils.visualization_utils import add_bbox_sensor_to_image, get_top_down_frame, VideoLogging
 from utils.sel_utils import sel_metric
 
-def start_worker(worker, agent_class, agent_input, device, tasks_queue, results_queue, tasks_list, timestamp):
+
+def start_worker(
+    worker, agent_class, agent_input, device, tasks_queue, results_queue, tasks_list, timestamp
+):
     if device != "cpu" and isinstance(device, int):
         torch.cuda.set_device(device)
     agent = agent_class.build_agent(**agent_input, device=device)
@@ -91,6 +91,7 @@ class OnlineEvaluatorWorker:
         prob_randomize_lighting: float,
         prob_randomize_materials: float,
         prob_randomize_colors: float,
+        seed: int = 0,
     ):
         self.controller = None
         self.gpu_device = gpu_device
@@ -107,6 +108,7 @@ class OnlineEvaluatorWorker:
         self.prob_randomize_lighting = prob_randomize_lighting
         self.prob_randomize_materials = prob_randomize_materials
         self.prob_randomize_colors = prob_randomize_colors
+        self.seed = seed
 
     def get_house(self, sample):
         house_idx = int(sample["house_id"])
@@ -114,7 +116,6 @@ class OnlineEvaluatorWorker:
 
     def get_agent_starting_position(self, sample):
         x, y, z = sample["observations"]["initial_agent_location"][:3]
-        # TODO: change to an assert when pickup benchmark reprocessed
         y = 0.9009921550750732  # Brute force correction for old pickup task samples
         return dict(x=x, y=y, z=z)
 
@@ -234,10 +235,15 @@ class OnlineEvaluatorWorker:
                 ),  # Will be overwritten in distribute_evaluate
                 visualize=False,
                 # prob_randomize_materials=0,
-                device=self.gpu_device if (self.gpu_device == "cpu" or isinstance(self.gpu_device, int)) else None,
+                device=(
+                    self.gpu_device
+                    if (self.gpu_device == "cpu" or isinstance(self.gpu_device, int))
+                    else None
+                ),
                 prob_randomize_lighting=self.prob_randomize_lighting,
                 prob_randomize_materials=self.prob_randomize_materials,
                 prob_randomize_colors=self.prob_randomize_colors,
+                seed=self.seed,
             )
 
         return self._task_sampler
@@ -317,17 +323,17 @@ class OnlineEvaluatorWorker:
                         which_image="manip",
                     )
 
-                
                 video_frame = self.logging_sensor.get_video_frame(
                     agent_frame=curr_frame,
                     frame_number=eps_idx,
-                    action_names=action_list[:5] + action_list[6:8],  # action_list
-                    action_dist=probs.tolist()[:5] + probs.tolist()[6:8],  # probs.tolist()
+                    action_names=action_list,
+                    action_dist=probs.tolist(),
                     ep_length=task.max_steps,
                     last_action_success=task.last_action_success,
                     taken_action=action,
                     task_desc=goal,
-                    debug = task.debug_info,
+                    task_type=task.task_info["task_type"],
+                    debug=task.debug_info,
                 )
 
                 all_video_frames.append(video_frame)
@@ -467,7 +473,7 @@ class OnlineEvaluatorWorker:
         metrics["blind"] = blind
         metrics["fragile"] = fragile
         metrics["critical"] = critical
-        
+
         if success:
             metrics["eps_len_succ"] = metrics["eps_len"]
         else:
@@ -533,7 +539,11 @@ class OnlineEvaluatorWorker:
         return metrics
 
     def distribute_evaluate(
-        self, agent: AbstractAgent, tasks_queue: mp.Queue, results_queue: mp.Queue, tasks_list: List[Dict[str, Any]]
+        self,
+        agent: AbstractAgent,
+        tasks_queue: mp.Queue,
+        results_queue: mp.Queue,
+        tasks_list: List[Dict[str, Any]],
     ):
         verbose = platform.system() == "Darwin"
 
@@ -556,14 +566,13 @@ class OnlineEvaluatorWorker:
 
             except EmptyQueueError:
                 print(f"Terminating worker {self.worker_id}: No houses left in house_tasks.")
-                empty_flag = True
                 break
-            
+
             if verbose:
                 print(f"Sample {num_tasks}")
 
             sample_result = self.evaluate_on_task(task=task, agent=agent, worker_id=self.worker_id)
-            
+
             task_info = {**task.task_info, **task.task_info["eval_info"]}
             del task_info["eval_info"]
             to_log = dict(
@@ -579,11 +588,18 @@ class OnlineEvaluatorWorker:
 
             video_table_data = None
             if send_videos_back and task_info["needs_video"]:
-                flag = 'Success' if sample_result["metrics"]["success"] > 0.1 else 'Failed'
+                flag = "Success" if sample_result["metrics"]["success"] > 0.1 else "Failed"
                 eps_name = (
-                    f"{sample_result['metrics']['corner']}_{sample_result['metrics']['blind']}" + '_' + \
-                        f"{sample_result['metrics']['danger']}_{sample_result['metrics']['fragile']}_{sample_result['metrics']['critical']}" + \
-                        "_" + flag + "_" + str(task_info["sample_id"]) + "_" + sample_result["goal"].replace(" ", "-") + ".mp4"
+                    f"{sample_result['metrics']['corner']}_{sample_result['metrics']['blind']}"
+                    + "_"
+                    + f"{sample_result['metrics']['danger']}_{sample_result['metrics']['fragile']}_{sample_result['metrics']['critical']}"
+                    + "_"
+                    + flag
+                    + "_"
+                    + str(task_info["sample_id"])
+                    + "_"
+                    + sample_result["goal"].replace(" ", "-")
+                    + ".mp4"
                 )
                 print(f"Saving video to {eps_name}")
                 video_path_to_send = cast(str, os.path.join(self.outdir, eps_name))

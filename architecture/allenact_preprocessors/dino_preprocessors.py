@@ -1,4 +1,4 @@
-from typing import List, Optional, Any, cast, Dict, Union, Sequence
+from typing import Any, Dict, List, Optional, Sequence, Union, cast
 
 import gym
 import numpy as np
@@ -6,6 +6,7 @@ import torch
 import torch.nn as nn
 from allenact.base_abstractions.preprocessor import Preprocessor
 from allenact.utils.misc_utils import prepare_locals_for_super
+
 from utils.transformation_util import get_transformation, sample_a_specific_transform
 
 DINO_PRETRAINED_MODEL = ["dinov2_vits14", "dinov2_vitb14", "dinov2_vitl14", "dinov2_vitg14"]
@@ -27,8 +28,10 @@ class DinoViTEmbedder(nn.Module):
             x = x.reshape(B, D, 16, 27)
             x = self.pool(x)
             return x
+
     def get_device(self):
         return next(self.model.parameters()).device
+
 
 class DinoViTPreprocessor(Preprocessor):
     DINO_RGB_MEANS = (0.48145466, 0.4578275, 0.40821073)
@@ -67,7 +70,7 @@ class DinoViTPreprocessor(Preprocessor):
                 output_shape = (7, 12, 1536)
         else:
             raise NotImplementedError(
-                f"Currently `dino_model_type` must be one of 'dinov2_vits14', 'dinov2_vitb14', 'dinov2_vitl14', or 'dinov2_vitg14'"
+                "Currently `dino_model_type` must be one of 'dinov2_vits14', 'dinov2_vitb14', 'dinov2_vitl14', or 'dinov2_vitg14'"
             )
 
         self.dino_model_type = dino_model_type
@@ -150,6 +153,7 @@ class PostPreprocessor(nn.Module):
         elif self.preserve_spatial:
             x = torch.permute(x, (0, 2, 1))
         return x
+
 
 # this is always called for allenact models
 class DataAugmentationPreprocessor(Preprocessor):

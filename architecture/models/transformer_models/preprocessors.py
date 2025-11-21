@@ -1,6 +1,6 @@
 import random
 from dataclasses import dataclass, field
-from typing import Tuple, List
+from typing import List, Tuple
 
 import torch
 import torchvision
@@ -13,7 +13,10 @@ from transformers import AutoTokenizer
 
 from utils.constants.stretch_initialization_utils import ALL_STRETCH_ACTIONS
 from utils.sensor_constant_utils import is_a_visual_sensor
-from utils.transformation_util import get_full_transformation_list, sample_a_specific_transform
+from utils.transformation_util import (
+    get_full_transformation_list,
+    sample_a_specific_transform,
+)
 
 
 def tensor_image_preprocessor(

@@ -14,9 +14,7 @@ from allenact.base_abstractions.sensor import ExpertActionSensor, Sensor, Sensor
 from allenact.base_abstractions.task import TaskSampler
 from allenact.utils.experiment_utils import evenly_distribute_count_into_bins
 from environment.stretch_controller import StretchController
-# from safety_gymnasium.tasks.safe_vla.multi_task_eval_sampler import MultiTaskSampler
 from tasks.multi_task_eval_sampler import MultiTaskSampler
-# from safety_gymnasium.tasks.safe_vla.task_specs import TaskSpecDatasetList, TaskSpecSamplerInfiniteList
 from tasks.task_specs import TaskSpecDatasetList, TaskSpecSamplerInfiniteList
 from utils.constants.objaverse_data_dirs import OBJAVERSE_HOUSES_DIR
 from utils.constants.stretch_initialization_utils import (
@@ -44,6 +42,7 @@ def task_sampler_args_builder(
     deterministic_cudnn: bool = False,
     devices: Optional[List[int]] = None,
     max_houses: Optional[int] = None,
+    seed: Optional[int] = None,
 ):
     assert on_server or max_houses is not None, (
         "max_houses must be provided if not on server. "
@@ -115,6 +114,7 @@ def task_sampler_args_builder(
         "always_allocate_a_new_stretch_controller_when_reset": True,
         "retain_agent_pose": False,
         "prob_randomize_materials": prob_randomize_materials,
+        "seed": seed,
     }
 
 
@@ -280,6 +280,12 @@ class BaseConfig(ExperimentConfig, ABC):
         seeds: Optional[List[int]] = None,
         deterministic_cudnn: bool = False,
     ) -> Dict[str, Any]:
+        seed = None
+        if mode in ["val", "test"] and seeds is not None and len(seeds) > 0:
+            seed = seeds[process_ind % len(seeds)]
+        elif mode in ["val", "test"]:
+            seed = 0
+
         return task_sampler_args_builder(
             process_ind=process_ind,
             total_processes=total_processes,
@@ -296,6 +302,7 @@ class BaseConfig(ExperimentConfig, ABC):
             max_steps=self.params.max_steps,
             max_houses=self.params.max_houses,
             prob_randomize_materials=0.8 if mode == "train" else 0,
+            seed=seed,
         )
 
     def train_task_sampler_args(

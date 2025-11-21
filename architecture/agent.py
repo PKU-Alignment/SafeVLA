@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import List, Tuple, Any, Dict
+from typing import Any, Dict, List, Tuple
 
 
 class AbstractAgent(ABC):

@@ -4,47 +4,42 @@ Object navigation is currently available as a Task in AI2-THOR and
 Facebook's Habitat.
 """
 
-from collections import OrderedDict
-import numpy as np
 import os
-from typing import Any, Dict, List, Optional, Sequence, Union, cast, Tuple
+from collections import OrderedDict
+from typing import Any, Dict, List, Optional, Tuple, Union, cast
 
 import gym
+import numpy as np
 import torch
 import torch.nn as nn
-from torch import Tensor
-from torch.nn.modules.transformer import _get_clones
-from gym.spaces import Dict as SpaceDict
-
-from allenact.algorithms.onpolicy_sync.policy import ObservationType
-from allenact.embodiedai.models.visual_nav_models import (
-    VisualNavActorCritic,
-    FusionType,
+import torch.nn.functional as F
+from allenact.algorithms.onpolicy_sync.policy import (
+    DistributionType,
+    LinearActorHead,
+    LinearCriticHead,
+    ObservationType,
 )
-from transformers import T5EncoderModel, AutoTokenizer
-from utils.string_utils import convert_byte_to_string
-from utils.nn_utils import create_causal_mask, debug_model_info
 from allenact.base_abstractions.misc import ActorCriticOutput, Memory
-from allenact.algorithms.onpolicy_sync.policy import ObservationType, DistributionType
 from allenact.embodiedai.aux_losses.losses import MultiAuxTaskNegEntropyLoss
-from allenact.utils.model_utils import FeatureEmbedding
+from allenact.embodiedai.models.visual_nav_models import (
+    FusionType,
+    VisualNavActorCritic,
+)
 from allenact.utils.system import get_logger
-from architecture.models.transformer_models.text_cond_visual_encoder import PositionalEncoder
+from gym.spaces import Dict as SpaceDict
+from transformers import AutoTokenizer, T5EncoderModel
+
+from architecture.models.transformer_models.text_cond_visual_encoder import (
+    PositionalEncoder,
+)
+from training.online.third_party_models.llama.model import ModelArgs as LLAMAModelArgs
 from training.online.third_party_models.llama.model import (
     TransformerDecoder as LLAMATransformerDecoder,
 )
-from training.online.third_party_models.llama.model import ModelArgs as LLAMAModelArgs
 from utils.bbox_utils import get_best_of_two_bboxes
-
-from allenact.algorithms.onpolicy_sync.policy import (
-    ActorCriticModel,
-    LinearCriticHead,
-    LinearActorHead,
-    ObservationType,
-    DistributionType,
-)
 from utils.loss_functions import HLGaussLoss
-import torch.nn.functional as F
+from utils.nn_utils import debug_model_info
+from utils.string_utils import convert_byte_to_string
 
 TGTCache = torch.Tensor
 
@@ -168,16 +163,20 @@ class DinoLLAMATxNavActorCritic(VisualNavActorCritic):
         )
 
         if prev_checkpoint is not None:
-            assert prev_rl_checkpoint is None, "Cannot have both prev_checkpoint and prev_rl_checkpoint"
+            assert (
+                prev_rl_checkpoint is None
+            ), "Cannot have both prev_checkpoint and prev_rl_checkpoint"
             # This is in charge of loading the pytorch lightning checkpoint form Imitation learning
             ckpt = prev_checkpoint  # self.get_ckpt_path(prev_checkpoint, ckpt_step)
             from training.offline.train_utils import load_pl_ckpt_allenact
+
             load_pl_ckpt_allenact(self, ckpt)
         elif prev_rl_checkpoint is not None:
             ckpt = torch.load(os.path.abspath(prev_rl_checkpoint), map_location="cpu")
 
             ckpt = cast(
-                Dict[str, Union[Dict[str, Any], torch.Tensor, float, int, str, List]], ckpt,
+                Dict[str, Union[Dict[str, Any], torch.Tensor, float, int, str, List]],
+                ckpt,
             )
 
             state_dict = ckpt["model_state_dict"]
@@ -186,7 +185,6 @@ class DinoLLAMATxNavActorCritic(VisualNavActorCritic):
             print(f"Loaded model from {prev_rl_checkpoint} with status: {str(load_status)}")
 
         self.train()
-
 
         debug_model_info(self, use_logger=False)
 
@@ -253,9 +251,7 @@ class DinoLLAMATxNavActorCritic(VisualNavActorCritic):
         else:  # single belief model
             if self.use_linear_belief_adaptor:
                 self.state_encoders_linear = nn.Linear(tx_input_size, self._hidden_size)
-            self.time_encoder = PositionalEncoder(
-                self._hidden_size, max_len=self.max_steps
-            )
+            self.time_encoder = PositionalEncoder(self._hidden_size, max_len=self.max_steps)
 
             self.decoder = LLAMATransformerDecoder(state_encoders_params)
             self.belief_names = ["single_belief"]
@@ -306,7 +302,9 @@ class DinoLLAMATxNavActorCritic(VisualNavActorCritic):
         ckpt_dir = os.path.join(exp_base_dir, "ckpts")
         os.makedirs(ckpt_dir, exist_ok=True)
 
-        ckpt_fn = f"{wandb_entity_name}/{wandb_project_name}/ckpt-{training_run_id}-{ckptStep}:latest"
+        ckpt_fn = (
+            f"{wandb_entity_name}/{wandb_project_name}/ckpt-{training_run_id}-{ckptStep}:latest"
+        )
         artifact = api.artifact(ckpt_fn)
         artifact.download(ckpt_dir)
         ckpt_pth = os.path.join(ckpt_dir, "model.ckpt")
@@ -397,7 +395,7 @@ class DinoLLAMATxNavActorCritic(VisualNavActorCritic):
         extras = (
             {
                 aux_uuid: {
-                    "beliefs": beliefs, # (beliefs_dict[aux_uuid] if self.multiple_beliefs else beliefs),
+                    "beliefs": beliefs,  # (beliefs_dict[aux_uuid] if self.multiple_beliefs else beliefs),
                     "obs_embeds": obs_embeds,
                     "aux_model": (
                         self.aux_models[aux_uuid] if aux_uuid in self.aux_models else None
@@ -630,8 +628,12 @@ class DinoTxGoalEncoder(nn.Module):
         if self.blind:
             return self.embed_goal(observations[self.goal_uuid])
 
-        vis_fit = self.visual_compressor(observations[self.dino_uuid]).flatten(start_dim=2).permute(0, 2, 1)
-        corresponding_camera_token = getattr(self, f"visual_sensor_token_raw_navigation_camera")
+        vis_fit = (
+            self.visual_compressor(observations[self.dino_uuid])
+            .flatten(start_dim=2)
+            .permute(0, 2, 1)
+        )
+        corresponding_camera_token = getattr(self, "visual_sensor_token_raw_navigation_camera")
 
         concatenated_feats = [
             self.fusion_token.view(1, 1, -1).expand(nstep * nsampler, -1, -1),
@@ -639,8 +641,12 @@ class DinoTxGoalEncoder(nn.Module):
         ]
 
         if self.manip_uuid is not None:
-            manip_fit = self.visual_compressor(observations[self.manip_uuid]).flatten(start_dim=2).permute(0, 2, 1)
-            corresponding_manip_token = getattr(self, f"visual_sensor_token_raw_manipulation_camera")
+            manip_fit = (
+                self.visual_compressor(observations[self.manip_uuid])
+                .flatten(start_dim=2)
+                .permute(0, 2, 1)
+            )
+            corresponding_manip_token = getattr(self, "visual_sensor_token_raw_manipulation_camera")
             concatenated_feats.append(self.visual_adapter(manip_fit) + corresponding_manip_token)
 
         if self.goal_uuid is not None:

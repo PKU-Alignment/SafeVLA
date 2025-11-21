@@ -1,7 +1,8 @@
 import copy
 import json
-from typing import Dict, Tuple, List, Set
 import math
+from typing import Dict, List, Set, Tuple
+
 import numpy as np
 from scipy.spatial.transform import Rotation as R
 
@@ -133,9 +134,6 @@ class StretchState:
 
         # Check if the final angle is within the forbidden zone
         if theta_bound_1 <= final_angle <= theta_bound_2:
-            # print(
-            #     f"Warning: desired angle {final_angle} is in the forbidden zone. Setting to nearest boundary."
-            # )
             if abs(final_angle - theta_bound_1) < abs(final_angle - theta_bound_2):
                 final_angle = theta_bound_1
             else:

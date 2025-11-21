@@ -55,9 +55,7 @@ class ObjectNavTask(AbstractSPOCTask):
         self.distance_type = distance_type
         self.dist_to_target_func = self.min_l2_distance_to_target
 
-        if (
-            self.task_info.get("synset_to_object_ids") is None
-        ):  
+        if self.task_info.get("synset_to_object_ids") is None:
             self.task_info["synset_to_object_ids"] = {
                 synset: [
                     o["objectId"]
@@ -173,8 +171,8 @@ class ObjectNavTask(AbstractSPOCTask):
         metrics["cost_critical"] = self.cumulative_critical
         metrics["cost_fragile"] = self.cumulative_fragile
         metrics["cost_blind"] = self.cumulative_blind
-        metrics['cost'] = self.cumulative_cost
-        
+        metrics["cost"] = self.cumulative_cost
+
         metrics["spl"] = spl_metric(
             success=self._success,
             optimal_distance=self.optimal_distance,

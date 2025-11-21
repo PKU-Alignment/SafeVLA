@@ -147,9 +147,11 @@ class TextCondMultiCameraVisualEncoder(nn.Module):
             self.image_encoder(imgs.reshape(B * T, C, H, W))  # shape: [496, 384, 7, 12]
         )  # BTxC_xH_xW_
         _, C_, H_, W_ = feats.shape
-        feats = feats.reshape(B * T, C_, H_ * W_).permute(0, 2, 1)  # BTxH_W_xC_ ([496, 84, 512]) - make sense
-        
-        return self.visual_adapter(feats) # doesn't change shape
+        feats = feats.reshape(B * T, C_, H_ * W_).permute(
+            0, 2, 1
+        )  # BTxH_W_xC_ ([496, 84, 512]) - make sense
+
+        return self.visual_adapter(feats)  # doesn't change shape
 
     def create_compressor(self):
         return nn.Sequential(

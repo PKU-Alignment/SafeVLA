@@ -4,41 +4,40 @@ import pdb
 import random
 import warnings
 from contextlib import contextmanager
-from typing import Dict, Optional, Set, Sequence, List, Tuple, Iterable, Literal, Union
+from typing import Dict, Iterable, List, Literal, Optional, Sequence, Set, Tuple, Union
 
 import numpy as np
 import torch
 from ai2thor.controller import Controller
 from ai2thor.server import Event
-from allenact_plugins.ithor_plugin.ithor_environment import IThorEnvironment
-from shapely import Polygon, GeometryCollection
+from shapely import GeometryCollection, Polygon
 
 from environment.spoc_objects import SPOCObject
 from environment.stretch_state import StretchState
 from utils.constants.stretch_initialization_utils import (
-    INTEL_VERTICAL_FOV,
-    AGENT_RADIUS_LIST,
-    AGENT_MOVEMENT_CONSTANT,
     ADDITIONAL_ARM_ARGS,
+    ADDITIONAL_NAVIGATION_ARGS,
+    AGENT_MOVEMENT_CONSTANT,
+    AGENT_RADIUS_LIST,
     AGENT_ROTATION_DEG,
-    WRIST_ROTATION,
     ARM_MOVE_CONSTANT,
     HORIZON,
-    ADDITIONAL_NAVIGATION_ARGS,
+    INTEL_VERTICAL_FOV,
     STRETCH_COMMIT_ID,
     STRETCH_WRIST_BOUND_1,
     STRETCH_WRIST_BOUND_2,
+    WRIST_ROTATION,
 )
 from utils.data_generation_utils.navigation_utils import (
-    get_rooms_polymap_and_type,
     get_room_id_from_location,
-    rotation_from,
+    get_rooms_polymap_and_type,
     get_wall_center_floor_level,
-    triangulate_room_polygon,
     is_any_object_sufficiently_visible_and_in_center_frame,
+    rotation_from,
     snap_to_skeleton,
+    triangulate_room_polygon,
 )
-from utils.distance_calculation_utils import sum_dist_path, position_dist
+from utils.distance_calculation_utils import position_dist, sum_dist_path
 from utils.synset_utils import is_hypernym_of
 from utils.type_utils import THORActions, Vector3
 
@@ -251,10 +250,6 @@ class StretchController:
 
         if "horizon" in kwargs:
             del kwargs["horizon"]
-            # warnings.warn(
-            #     "`horizon` is not a valid argument for teleport_agent, as camera locations are set on reset."
-            #     " This argument will be ignored."
-            # )
 
         if len(kwargs) > 0:
             allowed_keys = {
@@ -311,15 +306,6 @@ class StretchController:
             self.controller.step({"action": "AddThirdPartyCamera", "skyboxColor": "white", **cam})
 
         waypoints = []
-        # for target in targets_to_highlight or []:
-        #     target_position = self.get_object_position(target)
-        #     target_dict = {
-        #         "position": target_position,
-        #         "color": {"r": 1, "g": 0, "b": 0, "a": 1},
-        #         "radius": 0.5,
-        #         "text": "",
-        #     }
-        #     waypoints.append(target_dict)
 
         event = self.controller.step(
             {
@@ -375,7 +361,7 @@ class StretchController:
             raise_for_failure=True,
         )
 
-    def reset(self, scene, seed=0):
+    def reset(self, scene, seed=None):
         if scene is None:
             raise ValueError("`scene` must be non-None.")
 
@@ -407,7 +393,7 @@ class StretchController:
         self.reset_visibility_cache()
         reset_event = self.controller.reset(scene=scene)
         if seed is not None:
-            self.controller.step('SetRandomSeed', seed=seed)
+            self.controller.step("SetRandomSeed", seed=seed)
 
         self.calibrate_agent()
 
@@ -419,14 +405,6 @@ class StretchController:
             self.current_scene_json
         )
 
-        # tele_event = self.teleport_agent(
-        #     **scene["metadata"]["agent"],
-        # )
-        #
-        # if not tele_event.metadata["lastActionSuccess"]:
-        #     warnings.warn("FAILED TO TELEPORT AGENT AFTER INITIALIZATION", scene)
-        #     return tele_event.metadata
-
         if not self.render_mani_camera:
             # warnings.warn(f"The manipulation camera is not being rendered.")
             self.controller.step("DisableSecondaryCamera")
@@ -434,12 +412,6 @@ class StretchController:
 
         return reset_event
 
-    # removed to induce errors for moving to new get_objects api
-    # def get_all_objects_of_type(self, object_type):
-    #     with self.include_object_metadata_context():
-    #         return self.controller.last_event.objects_by_type(object_type)
-
-    # TODO: compatible with new get_objects?
     def get_visible_objects(
         self,
         which_camera: Literal["nav", "manip", "both"] = "nav",
@@ -530,7 +502,7 @@ class StretchController:
     def set_object_filter(self, object_ids: List[str]):
         assert len(object_ids) == 0, "Please don't do this, talk to Luca about why."
         return self.controller.step(
-            action="SetObjectFilter",   
+            action="SetObjectFilter",
             objectIds=object_ids,
             raise_for_failure=True,
         )
@@ -752,13 +724,6 @@ class StretchController:
         return not too_small
 
     def agent_step(self, action):
-        # agents_full_pose_before_action = copy.deepcopy(
-        #     dict(
-        #         agent_pose=self.get_current_agent_full_pose(),
-        #         arm_pose=self.get_relative_stretch_current_arm_state(),
-        #         wrist=self.get_arm_wrist_rotation(),
-        #     )
-        # )
         agents_full_pose_before_action = StretchState(self.controller)
 
         if action == THORActions.move_ahead:
@@ -1186,9 +1151,7 @@ class StretchController:
     def get_agent_room_id_and_type(self) -> Tuple[str, str]:
         agent_position = self.get_current_agent_position()
         room_id = get_room_id_from_location(self.room_poly_map, agent_position)
-        room_type_return = (
-            self.room_type_dict[room_id] if room_id is not None else None
-        )
+        room_type_return = self.room_type_dict[room_id] if room_id is not None else None
         return room_id, room_type_return
 
     def find_closest_room_of_list(self, room_ids, return_id_and_dist: bool = False):
@@ -1219,8 +1182,6 @@ class StretchController:
         rooms,
     ):
         room_ids = [room["id"] for room in rooms]
-
-        room_ids_json = [room["id"] for room in self.current_scene_json["rooms"]]
 
         all_paths = []
         for room_id in room_ids:

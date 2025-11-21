@@ -15,8 +15,10 @@ python training/online/online_eval.py --shuffle \
     --task_type FetchType \
     --input_sensors raw_navigation_camera raw_manipulation_camera last_actions an_object_is_in_hand \
     --house_set objaverse \
-    --num_workers 16 \
-    --ckpt_path /root/data/rl_ckpt/fetch/model.ckpt
+    --num_workers 32 \
+    --seed 4207 \
+    --ckpt_path /root/data/results/checkpoints/Fetch/2025-11-18_23-50-35/exp_Fetch__stage_02__steps_000024764284.pt
+    # --ckpt_path /root/data/results/checkpoints/Fetch/2025-11-18_16-29-04/exp_Fetch__stage_02__steps_000024347636.pt
 
     # --ckpt_path /root/poliformer/results/checkpoints/advance_loss_add_objcost/2025-05-04_09-44-01/exp_advance_loss_add_objcost__stage_02__steps_000002512040.pt
     # --ckpt_path /root/poliformer/results/checkpoints/advance_loss_add_objcost/2025-05-04_07-32-07/exp_advance_loss_add_objcost__stage_00__steps_000000202032.pt

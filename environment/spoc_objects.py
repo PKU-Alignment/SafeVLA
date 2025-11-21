@@ -1,11 +1,11 @@
 import json
-from typing import Dict, Any
+from typing import Any, Dict
 
 from torch.distributions.utils import lazy_property
 
 from utils.constants.object_constants import (
-    AI2THOR_OBJECT_TYPE_TO_WORDNET_SYNSET,
     AI2THOR_OBJECT_TYPE_TO_MOST_SPECIFIC_WORDNET_LEMMA,
+    AI2THOR_OBJECT_TYPE_TO_WORDNET_SYNSET,
 )
 from utils.objaverse_annotation import get_objaverse_annotations
 

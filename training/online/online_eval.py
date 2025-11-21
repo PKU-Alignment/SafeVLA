@@ -1,20 +1,21 @@
 import argparse
 import datetime
 import os
+
 # from online_evaluation.local_logging_utils import LocalWandb
 import wandb
 import torch
 
 from architecture.models.allenact_transformer_models.inference_agent import InferenceAgentVIDA
 
-from training.online.dinov2_vits_tsfm_rgb_augment_objectnav import (
-    DinoV2ViTSTSFMObjectNav,
-    DinoV2ViTSTSFMObjectNavParams,
+from training.online.dinov2_vits_tsfm_base import (
+    DinoV2ViTSTSFMBase,
+    DinoV2ViTSTSFMBaseParams,
 )
 from online_evaluation.online_evaluator import OnlineEvaluatorManager
-# from safety_gymnasium.tasks.safe_vla import REGISTERED_TASKS
 from tasks import REGISTERED_TASKS
 from training.online.dataset_mixtures import get_mixture_by_name
+
 DINO_RGB_MEANS = (0.48145466, 0.4578275, 0.40821073)
 DINO_RGB_STDS = (0.26862954, 0.26130258, 0.27577711)
 img_encoder_type = {
@@ -25,19 +26,17 @@ img_encoder_type = {
 }
 
 model_config_type = {
-    "InferenceDINOv2ViTSLLAMATxTxObjectNavDist": DinoV2ViTSTSFMObjectNav,
+    "InferenceDINOv2ViTSLLAMATxTxBaseDist": DinoV2ViTSTSFMBase,
 }
 
 model_config_params = {
-    "InferenceDINOv2ViTSLLAMATxTxObjectNavDist": DinoV2ViTSTSFMObjectNavParams,
+    "InferenceDINOv2ViTSLLAMATxTxBaseDist": DinoV2ViTSTSFMBaseParams,
 }
 
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Online evaluation")
-    parser.add_argument(
-        "--model_config", default="InferenceDINOv2ViTSLLAMATxTxObjectNavDist", type=str
-    )
+    parser.add_argument("--model_config", default="InferenceDINOv2ViTSLLAMATxTxBaseDist", type=str)
     parser.add_argument("--training_tag", type=str)
     parser.add_argument("--wandb_project_name", type=str, default="")
     parser.add_argument("--wandb_entity_name", type=str, default="")
@@ -64,6 +63,7 @@ def parse_args():
     parser.add_argument("--prob_randomize_lighting", type=float, default=0)
     parser.add_argument("--prob_randomize_materials", type=float, default=0)
     parser.add_argument("--prob_randomize_colors", type=float, default=0)
+    parser.add_argument("--seed", type=int, default=123)
     parser.add_argument(
         "--input_sensors",
         nargs="+",
@@ -83,8 +83,8 @@ def parse_args():
 
 def get_eval_run_name(args):
     name = os.getenv("WANDB_NAME")
-    if name == '' or name is None:
-        name = 'OnlineEval'
+    if name == "" or name is None:
+        name = "OnlineEval"
     exp_name = [name]
 
     if args.extra_tag != "":
@@ -104,15 +104,15 @@ def main(args):
         name=eval_run_name,
         dir=os.path.join(exp_dir, "wandb"),
     )
-    
+
     class WandbWrapper:
         def __init__(self, run):
             self.run = run
-            self.Table = wandb.Table 
-            
+            self.Table = wandb.Table
+
         def log(self, *args, **kwargs):
             return self.run.log(*args, **kwargs)
-            
+
     preset_wandb = WandbWrapper(run)
 
     if args.task_type not in REGISTERED_TASKS:
@@ -149,6 +149,7 @@ def main(args):
         prob_randomize_lighting=args.prob_randomize_lighting,
         prob_randomize_materials=args.prob_randomize_materials,
         prob_randomize_colors=args.prob_randomize_colors,
+        seed=args.seed,
     )
 
     params = model_config_params[args.model_config]()

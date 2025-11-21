@@ -6,7 +6,7 @@ my_package.egg-info/
 build/
 dist/
 pip-wheel-metadata/
-
+.ruff_cache
 
 # dev tools
 

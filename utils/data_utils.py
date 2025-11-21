@@ -144,10 +144,10 @@ class LazyJsonTaskSpecs(LazyJsonDataset):
 
 class DatasetDict(dict):
     """A dictionary-like object for storing datasets with attribute access."""
-    
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-    
+
     def __getattr__(self, key):
         try:
             return self[key]
@@ -160,83 +160,55 @@ def load_dataset_from_path(
     split_to_path: Optional[Dict[str, str]] = None,
     max_items_per_split: Optional[Union[int, Dict[str, int]]] = None,
 ) -> DatasetDict:
-    """从本地路径加载数据集（不依赖prior库）
-    
-    Args:
-        path_to_splits: 包含train/val/test子目录的路径
-        split_to_path: split名称到路径的映射字典
-        max_items_per_split: 每个split最多加载的项目数
-        
-    Returns:
-        DatasetDict: 包含各个split的LazyJsonDataset对象的字典
-        
-    Examples:
-        # 从目录加载
-        data = load_dataset_from_path(path_to_splits="/path/to/data")
-        
-        # 从指定文件加载
-        data = load_dataset_from_path(
-            split_to_path={
-                "train": "/path/to/train.jsonl.gz",
-                "val": "/path/to/val.jsonl.gz"
-            }
-        )
-    """
-    assert (path_to_splits is None) != (split_to_path is None), \
-        "必须且只能提供 path_to_splits 或 split_to_path 中的一个"
-    
-    # 处理 max_items_per_split
+    assert (path_to_splits is None) != (
+        split_to_path is None
+    ), "Must provide either path_to_splits or split_to_path, but not both"
+
     if not isinstance(max_items_per_split, dict):
         max_items_per_split = defaultdict(lambda: max_items_per_split)
     else:
         max_items_per_split = defaultdict(lambda: None, max_items_per_split)
-    
-    # 构建 split_to_path
+
     if path_to_splits is not None:
         if not os.path.exists(path_to_splits):
-            raise FileNotFoundError(f"路径不存在: {path_to_splits}")
-        
+            raise FileNotFoundError(f"Path does not exist: {path_to_splits}")
+
         split_to_path = {
             "train": os.path.join(path_to_splits, "train"),
             "val": os.path.join(path_to_splits, "val"),
             "test": os.path.join(path_to_splits, "test"),
         }
-    
-    # 检查split路径是否存在
+
     valid_splits = {}
     for split, path in split_to_path.items():
         if os.path.exists(path):
             valid_splits[split] = path
         else:
-            warnings.warn(f"Split '{split}' 路径不存在: {path}，将被跳过")
-    
+            warnings.warn(f"Split '{split}' path does not exist: {path}, will be skipped")
+
     if len(valid_splits) == 0:
-        raise ValueError("没有找到任何有效的split")
-    
-    # 加载各个split的数据
+        raise ValueError("No valid splits found")
+
     split_to_dataset = {}
     for split, path in valid_splits.items():
         max_lines = max_items_per_split[split]
-        
-        if path.endswith('.jsonl.gz'):
-            # 直接是 .jsonl.gz 文件
-            print(f"加载 {split} split: {path}")
+
+        if path.endswith(".jsonl.gz"):
+            print(f"Loading {split} split: {path}")
             data = read_jsonlgz(path=path, max_lines=max_lines)
             split_to_dataset[split] = LazyJsonDataset(data=data)
         elif os.path.isdir(path):
-            # 是目录，查找 .jsonl.gz 文件
-            jsonlgz_files = [f for f in os.listdir(path) if f.endswith('.jsonl.gz')]
+            jsonlgz_files = [f for f in os.listdir(path) if f.endswith(".jsonl.gz")]
             if jsonlgz_files:
-                # 假设目录下只有一个 .jsonl.gz 文件，或取第一个
                 file_path = os.path.join(path, jsonlgz_files[0])
-                print(f"加载 {split} split: {file_path}")
+                print(f"Loading {split} split: {file_path}")
                 data = read_jsonlgz(path=file_path, max_lines=max_lines)
                 split_to_dataset[split] = LazyJsonDataset(data=data)
             else:
-                warnings.warn(f"目录 {path} 中没有找到 .jsonl.gz 文件")
+                warnings.warn(f"Directory {path} does not contain .jsonl.gz files")
         else:
-            warnings.warn(f"不支持的路径类型: {path}")
-    
+            warnings.warn(f"Unsupported path type: {path}")
+
     return DatasetDict(**split_to_dataset)
 
 

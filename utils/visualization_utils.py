@@ -221,6 +221,7 @@ def get_top_down_path_view(
 
     return map
 
+
 # TODO: plan1 save the path with unsafe points
 def get_top_down_frame(controller, agent_path, target_ids):
     top_down, agent_path = controller.get_top_down_path_view(agent_path, target_ids)
@@ -230,7 +231,7 @@ def get_top_down_frame(controller, agent_path, target_ids):
 class VideoLogging:
     # Class variable to track the previous frame's sum_cost
     _previous_sum_cost = None
-    
+
     @staticmethod
     def get_video_frame(
         agent_frame: np.ndarray,
@@ -241,7 +242,8 @@ class VideoLogging:
         last_action_success: Optional[bool],
         taken_action: Optional[str],
         task_desc: str,
-        debug : Optional[any],
+        task_type: str,
+        debug: Optional[any],
     ) -> np.array:
         agent_height, agent_width, ch = agent_frame.shape
 
@@ -249,16 +251,21 @@ class VideoLogging:
         full_font_load = ImageFont.truetype(font_to_use, 14)
 
         IMAGE_BORDER = 25
-        TEXT_OFFSET_H = 60  # Restore original value for action details
+        TEXT_OFFSET_H = 90  # For action details
         TEXT_OFFSET_V = 30
 
         # Define two alignment positions - one for labels and one for action details
         action_x = IMAGE_BORDER * 2 + agent_width + TEXT_OFFSET_H  # For action details
         info_x = IMAGE_BORDER * 2 + agent_width + 20  # For main labels alignment
 
+        task_type_lower = task_type.lower() if task_type else ""
+        is_fetch = "fetch" in task_type_lower
+        is_pickup = "pickup" in task_type_lower
+        right_padding = 380 if is_pickup else (350 if is_fetch else 250)
+
         image_dims = (
             agent_height + 2 * IMAGE_BORDER + 30,
-            agent_width + 2 * IMAGE_BORDER + 300,  # Further reduced right padding to 300
+            agent_width + 2 * IMAGE_BORDER + right_padding,
             ch,
         )
         image = np.full(image_dims, 255, dtype=np.uint8)
@@ -268,7 +275,7 @@ class VideoLogging:
 
         # Check if there's any NEW cost in current frame to determine if we need warnings
         sum_cost = debug.get("sum_cost", None)
-        
+
         # Determine if cost was triggered in the current frame
         # by comparing with previous frame's sum_cost
         has_cost = False
@@ -276,14 +283,18 @@ class VideoLogging:
             # If this is the first frame (frame_number == 0), reset previous cost
             if frame_number == 0:
                 VideoLogging._previous_sum_cost = 0
-            
+
             # Check if cost increased from previous frame
-            previous_cost = VideoLogging._previous_sum_cost if VideoLogging._previous_sum_cost is not None else 0
+            previous_cost = (
+                VideoLogging._previous_sum_cost
+                if VideoLogging._previous_sum_cost is not None
+                else 0
+            )
             has_cost = sum_cost > previous_cost
-            
+
             # Update previous cost for next frame
             VideoLogging._previous_sum_cost = sum_cost
-        
+
         # Add red border around agent frame if cost is triggered
         if has_cost:
             border_width = 2  # Reduced from 5 to 3 for thinner border
@@ -292,53 +303,56 @@ class VideoLogging:
             cv2.rectangle(
                 image,
                 (IMAGE_BORDER - border_width, IMAGE_BORDER - border_width),
-                (IMAGE_BORDER + agent_width + border_width, IMAGE_BORDER + agent_height + border_width),
+                (
+                    IMAGE_BORDER + agent_width + border_width,
+                    IMAGE_BORDER + agent_height + border_width,
+                ),
                 color=(255, 0, 0),  # Bright red in RGB format (R=255, G=0, B=0)
-                thickness=border_width
+                thickness=border_width,
             )
-            
+
             # Add yellow warning triangles on each sensor view (nav and manip)
             # Assuming agent_frame has two sensor views side by side
             sensor_width = agent_width // 2
             warning_size = 30  # Size of the warning triangle
-            
+
             # Helper function to draw warning triangle
             def draw_warning_triangle(img, x_offset, y_offset, size):
                 # Calculate triangle vertices (pointing up)
                 x_center = x_offset + size // 2
                 y_bottom = y_offset + size
                 y_top = y_offset
-                
+
                 # Triangle points
                 pt1 = (x_center, y_top)  # Top vertex
                 pt2 = (x_offset, y_bottom)  # Bottom left
                 pt3 = (x_offset + size, y_bottom)  # Bottom right
-                
+
                 # Note: img is in RGB format (not BGR), so Yellow is (255, 255, 0)
                 # Draw filled yellow triangle - RGB format: (R=255, G=255, B=0)
                 triangle_points = np.array([pt1, pt2, pt3])
-                
+
                 # Fill with yellow color in RGB
                 cv2.fillPoly(img, [triangle_points], color=(255, 255, 0))  # Yellow in RGB
-                
+
                 # Draw black border around triangle
                 cv2.polylines(img, [triangle_points], isClosed=True, color=(0, 0, 0), thickness=2)
-                
+
                 # Draw exclamation mark using PIL for better text rendering
                 pil_img = Image.fromarray(img)
                 draw = ImageDraw.Draw(pil_img)
-                
+
                 # Draw "!" symbol - centered and bold
                 font_size = int(size * 0.6)  # Larger font for better visibility
                 try:
                     warning_font = ImageFont.truetype(font_to_use, font_size)
                 except:
                     warning_font = ImageFont.load_default()
-                
+
                 # Center the exclamation mark properly
                 exclamation_x = x_center
                 exclamation_y = y_offset + size // 2 + 5  # Center vertically in triangle
-                
+
                 # Draw the exclamation mark multiple times to make it bold/thick
                 for dx in [-1, 0, 1]:
                     for dy in [-1, 0, 1]:
@@ -347,21 +361,21 @@ class VideoLogging:
                             "!",
                             font=warning_font,
                             fill=(0, 0, 0),  # Black
-                            anchor="mm"
+                            anchor="mm",
                         )
-                
+
                 return np.array(pil_img)
-            
+
             # Draw warning triangle on navigation view (left sensor, bottom-right corner)
             nav_x = IMAGE_BORDER + sensor_width - warning_size - 10
             nav_y = IMAGE_BORDER + agent_height - warning_size - 10
             image = draw_warning_triangle(image, nav_x, nav_y, warning_size)
-            
+
             # Draw warning triangle on manipulation view (right sensor, bottom-right corner)
             manip_x = IMAGE_BORDER + agent_width - warning_size - 10
             manip_y = IMAGE_BORDER + agent_height - warning_size - 10
             image = draw_warning_triangle(image, manip_x, manip_y, warning_size)
-        
+
         text_image = Image.fromarray(image)
         img_draw = ImageDraw.Draw(text_image)
         sum_danger = debug.get("sum_danger", None)
@@ -369,40 +383,60 @@ class VideoLogging:
         sum_blind = debug.get("sum_blind", None)
         sum_critical = debug.get("sum_critical", None)
         sum_fragile = debug.get("sum_fragile", None)
-        camera_seen = debug.get("camera_seen", None)    
-        critical_objects = debug.get("critical_objects", None)  
-        danger_objects = debug.get("danger_objects", None)  
-        error_message = debug.get("error_message", None)  
-        
+        camera_seen = debug.get("camera_seen", None)
+        critical_objects = debug.get("critical_objects", None)
+        danger_objects = debug.get("danger_objects", None)
+        error_message = debug.get("error_message", None)
+
         # Removed camera seen objects display for cleaner visualization
         if action_dist is not None:
             # Define navigation and manipulation actions
             navigation_actions = {
-                "move_ahead", "move_back", "rotate_left", "rotate_right",
-                "rotate_left_small", "rotate_right_small", "done", "sub_done"
+                "move_ahead",
+                "move_back",
+                "rotate_left",
+                "rotate_right",
+                "rotate_left_small",
+                "rotate_right_small",
+                "done",
+                "sub_done",
             }
             manipulation_actions = {
-                "move_arm_up", "move_arm_down", "move_arm_in", "move_arm_out",
-                "move_arm_up_small", "move_arm_down_small", "move_arm_in_small", "move_arm_out_small",
-                "wrist_open", "wrist_close", "pickup", "dropoff"
+                "move_arm_up",
+                "move_arm_down",
+                "move_arm_in",
+                "move_arm_out",
+                "move_arm_up_small",
+                "move_arm_down_small",
+                "move_arm_in_small",
+                "move_arm_out_small",
+                "wrist_open",
+                "wrist_close",
+                "pickup",
+                "dropoff",
             }
-            
+
             # Determine task type from task description
-            task_desc_lower = task_desc.lower()
-            is_objnav = "objnav" in task_desc_lower or "objectnav" in task_desc_lower
-            is_pickup = "pickup" in task_desc_lower
-            is_fetch = "fetch" in task_desc_lower
-            
+            task_type_lower = task_type.lower()
+            is_objnav = "objnav" in task_type_lower or "objectnav" in task_type_lower
+            is_pickup = "pickup" in task_type_lower
+            is_fetch = "fetch" in task_type_lower
+
             # Separate actions into navigation and manipulation groups
             nav_actions_data = []
             manip_actions_data = []
-            
+
+            if len(action_dist) != len(action_names):
+                print(
+                    f"Warning: action_dist length ({len(action_dist)}) != action_names length ({len(action_names)})"
+                )
+
             for prob, action in zip(action_dist, action_names):
                 try:
                     action_long_name = stretch_long_names[action]
                 except KeyError:
                     action_long_name = action
-                
+
                 if action_long_name in navigation_actions:
                     nav_actions_data.append((prob, action, action_long_name))
                 elif action_long_name in manipulation_actions:
@@ -410,15 +444,24 @@ class VideoLogging:
                 else:
                     # Fallback for unknown actions
                     nav_actions_data.append((prob, action, action_long_name))
-            
-            # Shorter bar width for cleaner visualization
-            bar_width = 60  # Reduced from 100
-            
+
+            if is_fetch:
+                action_font_size = 8
+                action_spacing = 8
+                bar_width = 50
+                title_font = ImageFont.truetype(font_to_use, 10)
+                action_font = ImageFont.truetype(font_to_use, action_font_size)
+            else:
+                action_font_size = 9
+                action_spacing = 9
+                bar_width = 55
+                title_font = ImageFont.truetype(font_to_use, 11)
+                action_font = ImageFont.truetype(font_to_use, action_font_size)
+
             # Draw section titles and actions based on task type
-            title_font = ImageFont.truetype(font_to_use, 12)
-            
+
             if is_objnav:
-                # ObjectNav: only show navigation
+                # ObjectNav: only show navigation (8 actions)
                 img_draw.text(
                     (action_x, TEXT_OFFSET_V - 15),
                     "Navigation",
@@ -426,146 +469,198 @@ class VideoLogging:
                     fill=(50, 50, 150),  # Dark blue
                     anchor="rm",
                 )
-                
+
                 # Draw navigation actions
                 for i, (prob, action, action_long_name) in enumerate(nav_actions_data):
+                    y_pos = TEXT_OFFSET_V + 5 + i * action_spacing
                     img_draw.text(
-                        (action_x, (TEXT_OFFSET_V + 5) + i * 10),
+                        (action_x, y_pos),
                         action_long_name,
-                        font=ImageFont.truetype(font_to_use, 10),
+                        font=action_font,
                         fill="gray" if action != taken_action else "black",
                         anchor="rm",
                     )
                     img_draw.rectangle(
                         (
                             action_x + 5,
-                            TEXT_OFFSET_V + i * 10,
+                            y_pos - 1,
                             action_x + 5 + int(bar_width * prob),
-                            (TEXT_OFFSET_V + 5) + i * 10,
+                            y_pos + 1,
                         ),
                         outline="blue",
                         fill="blue",
                     )
-            
+
             elif is_pickup:
-                # Pickup: only show manipulation
-                img_draw.text(
-                    (action_x, TEXT_OFFSET_V - 15),
-                    "Manipulation",
-                    font=title_font,
-                    fill=(150, 50, 50),  # Dark red
-                    anchor="rm",
-                )
-                
-                # Draw manipulation actions
-                for i, (prob, action, action_long_name) in enumerate(manip_actions_data):
+                # Pickup: show manipulation in two columns (6+6) to avoid overlapping
+                column_spacing = 200
+                items_per_column = 6
+
+                pickup_font = ImageFont.truetype(font_to_use, 13)
+                pickup_spacing = 15
+                pickup_bar_width = 50
+
+                # Draw left column (first 6 actions)
+                for i in range(min(items_per_column, len(manip_actions_data))):
+                    prob, action, action_long_name = manip_actions_data[i]
+                    y_pos = TEXT_OFFSET_V + i * pickup_spacing
                     img_draw.text(
-                        (action_x, (TEXT_OFFSET_V + 5) + i * 10),
+                        (action_x, y_pos),
                         action_long_name,
-                        font=ImageFont.truetype(font_to_use, 10),
+                        font=pickup_font,
                         fill="gray" if action != taken_action else "black",
                         anchor="rm",
                     )
                     img_draw.rectangle(
                         (
                             action_x + 5,
-                            TEXT_OFFSET_V + i * 10,
-                            action_x + 5 + int(bar_width * prob),
-                            (TEXT_OFFSET_V + 5) + i * 10,
+                            y_pos - 2,
+                            action_x + 5 + int(pickup_bar_width * prob),
+                            y_pos + 2,
                         ),
                         outline="red",
                         fill="red",
                     )
-            
-            elif is_fetch:
-                # Fetch: show both navigation (left) and manipulation (right) side by side
-                column_spacing = 90  # Space between two columns
-                
-                # Navigation title and actions (left)
-                img_draw.text(
-                    (action_x, TEXT_OFFSET_V - 15),
-                    "Navigation",
-                    font=title_font,
-                    fill=(50, 50, 150),  # Dark blue
-                    anchor="rm",
-                )
-                
-                for i, (prob, action, action_long_name) in enumerate(nav_actions_data):
-                    img_draw.text(
-                        (action_x, (TEXT_OFFSET_V + 5) + i * 10),
-                        action_long_name,
-                        font=ImageFont.truetype(font_to_use, 10),
-                        fill="gray" if action != taken_action else "black",
-                        anchor="rm",
-                    )
-                    img_draw.rectangle(
-                        (
-                            action_x + 5,
-                            TEXT_OFFSET_V + i * 10,
-                            action_x + 5 + int(bar_width * prob),
-                            (TEXT_OFFSET_V + 5) + i * 10,
-                        ),
-                        outline="blue",
-                        fill="blue",
-                    )
-                
-                # Manipulation title and actions (right)
+
+                # Draw right column (remaining 6 actions)
                 manip_x = action_x + column_spacing
-                img_draw.text(
-                    (manip_x, TEXT_OFFSET_V - 15),
-                    "Manipulation",
-                    font=title_font,
-                    fill=(150, 50, 50),  # Dark red
-                    anchor="rm",
-                )
-                
-                for i, (prob, action, action_long_name) in enumerate(manip_actions_data):
+                for i in range(items_per_column, len(manip_actions_data)):
+                    prob, action, action_long_name = manip_actions_data[i]
+                    y_pos = TEXT_OFFSET_V + (i - items_per_column) * pickup_spacing
                     img_draw.text(
-                        (manip_x, (TEXT_OFFSET_V + 5) + i * 10),
+                        (manip_x, y_pos),
                         action_long_name,
-                        font=ImageFont.truetype(font_to_use, 10),
+                        font=pickup_font,
                         fill="gray" if action != taken_action else "black",
                         anchor="rm",
                     )
                     img_draw.rectangle(
                         (
                             manip_x + 5,
-                            TEXT_OFFSET_V + i * 10,
-                            manip_x + 5 + int(bar_width * prob),
-                            (TEXT_OFFSET_V + 5) + i * 10,
+                            y_pos - 2,
+                            manip_x + 5 + int(pickup_bar_width * prob),
+                            y_pos + 2,
                         ),
                         outline="red",
                         fill="red",
                     )
-            
-            else:
-                # Default: show all actions in original format (for unknown task types)
-                for i, (prob, action) in enumerate(zip(action_dist, action_names)):
-                    try:
-                        action_long_name = stretch_long_names[action]
-                    except KeyError:
-                        action_long_name = action
-                    
+
+            elif is_fetch:
+                # Fetch: show both navigation (left) and manipulation (right) side by side
+                column_spacing = 120
+
+                # Navigation title and actions (left column)
+                img_draw.text(
+                    (action_x, TEXT_OFFSET_V - 15),
+                    "Nav",
+                    font=title_font,
+                    fill=(50, 50, 150),  # Dark blue
+                    anchor="rm",
+                )
+
+                for i, (prob, action, action_long_name) in enumerate(nav_actions_data):
+                    y_pos = TEXT_OFFSET_V + 5 + i * action_spacing
+                    short_name = (
+                        action_long_name.replace("move_", "")
+                        .replace("rotate_", "rot_")
+                        .replace("_small", "_s")
+                    )
                     img_draw.text(
-                        (action_x, (TEXT_OFFSET_V + 5) + i * 10),
-                        action_long_name,
-                        font=ImageFont.truetype(font_to_use, 10),
+                        (action_x, y_pos),
+                        short_name,
+                        font=action_font,
                         fill="gray" if action != taken_action else "black",
                         anchor="rm",
                     )
                     img_draw.rectangle(
                         (
                             action_x + 5,
-                            TEXT_OFFSET_V + i * 10,
+                            y_pos - 1,
                             action_x + 5 + int(bar_width * prob),
-                            (TEXT_OFFSET_V + 5) + i * 10,
+                            y_pos + 1,
                         ),
                         outline="blue",
                         fill="blue",
                     )
 
+                # Manipulation title and actions (right column)
+                manip_x = action_x + column_spacing
+                img_draw.text(
+                    (manip_x, TEXT_OFFSET_V - 15),
+                    "Manip",
+                    font=title_font,
+                    fill=(150, 50, 50),  # Dark red
+                    anchor="rm",
+                )
+
+                for i, (prob, action, action_long_name) in enumerate(manip_actions_data):
+                    y_pos = TEXT_OFFSET_V + 5 + i * action_spacing
+                    short_name = action_long_name.replace("move_arm_", "arm_").replace(
+                        "_small", "_s"
+                    )
+                    img_draw.text(
+                        (manip_x, y_pos),
+                        short_name,
+                        font=action_font,
+                        fill="gray" if action != taken_action else "black",
+                        anchor="rm",
+                    )
+                    img_draw.rectangle(
+                        (
+                            manip_x + 5,
+                            y_pos - 1,
+                            manip_x + 5 + int(bar_width * prob),
+                            y_pos + 1,
+                        ),
+                        outline="red",
+                        fill="red",
+                    )
+
+            else:
+                # Default: show all actions (fallback for unknown task types)
+                action_font = ImageFont.truetype(font_to_use, 8)
+                action_spacing = 8
+                bar_width = 50
+
+                for i, (prob, action) in enumerate(zip(action_dist, action_names)):
+                    try:
+                        action_long_name = stretch_long_names[action]
+                    except KeyError:
+                        action_long_name = action
+
+                    y_pos = TEXT_OFFSET_V + 5 + i * action_spacing
+                    short_name = action_long_name.replace("move_", "").replace("rotate_", "rot_")
+                    img_draw.text(
+                        (action_x, y_pos),
+                        short_name,
+                        font=action_font,
+                        fill="gray" if action != taken_action else "black",
+                        anchor="rm",
+                    )
+                    img_draw.rectangle(
+                        (
+                            action_x + 5,
+                            y_pos - 1,
+                            action_x + 5 + int(bar_width * prob),
+                            y_pos + 1,
+                        ),
+                        outline="blue",
+                        fill="blue",
+                    )
+
+        if is_pickup:
+            task_info_y = IMAGE_BORDER * 1 + 125
+            last_action_y = IMAGE_BORDER * 1 + 145
+            error_y = IMAGE_BORDER * 1 + 165
+            cost_info_y = IMAGE_BORDER * 1 + 210
+        else:
+            task_info_y = IMAGE_BORDER * 1 + 110
+            last_action_y = IMAGE_BORDER * 1 + 130
+            error_y = IMAGE_BORDER * 1 + 150
+            cost_info_y = IMAGE_BORDER * 1 + 185
+
         img_draw.text(
-            (info_x, IMAGE_BORDER * 1 + 90),
+            (info_x, task_info_y),
             f"Task: {task_desc}",
             font=full_font_load,
             fill=(100, 100, 100),  # Dark gray for consistency
@@ -579,39 +674,39 @@ class VideoLogging:
         )
         if last_action_success is not None:
             img_draw.text(
-                (info_x, IMAGE_BORDER * 1 + 110),
-                "Last Action:", 
+                (info_x, last_action_y),
+                "Last Action:",
                 font=full_font_load,
                 fill=(100, 100, 100),  # Dark gray for consistency
                 anchor="lm",
             )
             img_draw.text(
-                (info_x + 120, IMAGE_BORDER * 1 + 110),
+                (info_x + 120, last_action_y),
                 "Success" if last_action_success else "Failure",
                 font=full_font_load,
                 fill=(50, 180, 50) if last_action_success else (220, 50, 50),  # Adjusted colors
                 anchor="lm",
             )
 
-        if error_message is not None and error_message != '':
-            split_char = '\''
+        if error_message is not None and error_message != "":
+            split_char = "'"
             error_obj = None
             try:
                 error_obj = error_message.split(split_char)[1]
             except:
                 error_obj = error_message
             img_draw.text(
-                (info_x, IMAGE_BORDER * 1 + 130),
+                (info_x, error_y),
                 f"Error: {error_obj}",
                 font=full_font_load,
                 fill=(220, 50, 50),  # Consistent red color
                 anchor="lm",
             )
         # Cost Information Display
-        cost_start_y = IMAGE_BORDER * 1 + 175
+        cost_start_y = cost_info_y
         cost_spacing = 18  # Reduced from 22 to 18 to make table more compact
         title_spacing = 25  # Reduced from 30 to 25
-        
+
         # Draw section title with line
         title_y = cost_start_y - title_spacing
         img_draw.text(
@@ -624,23 +719,23 @@ class VideoLogging:
         # Draw horizontal line under title
         line_y = title_y + 15
         img_draw.line(
-            [(info_x, line_y), (info_x + 200, line_y)],
+            [(info_x, line_y), (info_x + 250, line_y)],
             fill=(200, 200, 200),  # Light gray line
-            width=1
+            width=1,
         )
-        
-        def draw_cost_item(y_pos, label, value, objects=None):
+
+        def draw_cost_item(x_pos, y_pos, label, value, label_width=85):
             if value is not None:
                 # Draw label
                 img_draw.text(
-                    (info_x, y_pos),
+                    (x_pos, y_pos),
                     f"{label}:",
                     font=full_font_load,
                     fill=(100, 100, 100),  # Dark gray for labels
                     anchor="lm",
                 )
                 # Draw value
-                value_x = info_x + 120  # Offset for value alignment
+                value_x = x_pos + label_width
                 img_draw.text(
                     (value_x, y_pos),
                     f"{value:.2f}" if isinstance(value, float) else str(value),
@@ -648,26 +743,25 @@ class VideoLogging:
                     fill=(220, 50, 50),  # Softer red for values
                     anchor="lm",
                 )
-                # Draw associated objects if any
-                if objects and len(objects) > 0:
-                    objects_text = ', '.join(objects)
-                    if len(objects_text) > 20:  # Truncate if too long
-                        objects_text = objects_text[:17] + "..."
-                    img_draw.text(
-                        (value_x + 80, y_pos),
-                        f"({objects_text})",
-                        font=ImageFont.truetype(font_to_use, 12),
-                        fill=(150, 150, 150),  # Light gray for object names
-                        anchor="lm",
-                    )
 
-        # Draw all cost items
-        draw_cost_item(cost_start_y, "Total Cost", sum_cost)
-        draw_cost_item(cost_start_y + cost_spacing, "Corner", sum_corner)
-        draw_cost_item(cost_start_y + cost_spacing * 2, "Blind Spot", sum_blind)
-        draw_cost_item(cost_start_y + cost_spacing * 3, "Danger", sum_danger, danger_objects)
-        draw_cost_item(cost_start_y + cost_spacing * 4, "Fragile", sum_fragile)
-        draw_cost_item(cost_start_y + cost_spacing * 5, "Critical", sum_critical, critical_objects)
+        left_col_x = info_x
+        right_col_x = info_x + 150
+
+        draw_cost_item(left_col_x, cost_start_y, "Total Cost", sum_cost, label_width=85)
+        draw_cost_item(
+            left_col_x, cost_start_y + cost_spacing, "Corner", sum_corner, label_width=85
+        )
+        draw_cost_item(
+            left_col_x, cost_start_y + cost_spacing * 2, "Blind Spot", sum_blind, label_width=85
+        )
+
+        draw_cost_item(right_col_x, cost_start_y, "Danger", sum_danger, label_width=70)
+        draw_cost_item(
+            right_col_x, cost_start_y + cost_spacing, "Fragile", sum_fragile, label_width=70
+        )
+        draw_cost_item(
+            right_col_x, cost_start_y + cost_spacing * 2, "Critical", sum_critical, label_width=70
+        )
 
         lower_offset = 10
         progress_bar_height = 20

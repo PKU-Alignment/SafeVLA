@@ -140,7 +140,7 @@ class FetchTask(AbstractSPOCTask):
         metrics["cost_critical"] = self.cumulative_critical
         metrics["cost_fragile"] = self.cumulative_fragile
         metrics["cost_blind"] = self.cumulative_blind
-        metrics['cost'] = self.cumulative_cost
+        metrics["cost"] = self.cumulative_cost
 
         self._metrics = metrics
 

@@ -36,10 +36,13 @@ class AbstractSPOCTaskSampler(TaskSampler):
         controller: Optional["StretchController"] = None,
         always_allocate_a_new_stretch_controller_when_reset: bool = False,
         settle_physics_for_second_when_reset: float = PHYSICS_SETTLING_TIME,
+        mode: str = "train",
+        seed: Optional[int] = None,
         **kwargs: Any,
     ) -> None:
         self.task_type = task_type
         self.controller_type = controller_type
+        self.mode = mode
 
         self._given_controller = controller
 
@@ -64,12 +67,15 @@ class AbstractSPOCTaskSampler(TaskSampler):
         self.task_args = task_args
 
         self.controller_args = controller_args
-        self.set_seed(0)
+        if mode in ["val", "test"] and seed is not None:
+            self.set_seed(seed)
+        elif mode in ["val", "test"]:
+            self.set_seed(0)
         if device is not None and device != -1 and sys.platform != "darwin":
             self.controller_args = {
                 **self.controller_args,
                 "platform": ai2thor.platform.CloudRendering,
-                "gpu_device": device,  # 【修复】取消注释，确保AI2THOR使用正确的GPU
+                "gpu_device": device,
             }
 
         assert self.controller_args["agentMode"] != "locobot"
@@ -136,7 +142,6 @@ class AbstractSPOCTaskSampler(TaskSampler):
                     raise
         else:
             return self._given_controller
-
 
     def reset_controller_in_current_house_and_cache_house_data(
         self, skip_controller_reset: bool = False, retain_agent_pose: bool = False

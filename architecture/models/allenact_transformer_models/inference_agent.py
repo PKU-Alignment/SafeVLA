@@ -1,26 +1,32 @@
+import base64
+import io
+import json
+import os
+from typing import Optional, Tuple, cast
 
-from typing import Optional, cast, Tuple
-from PIL import Image
-import os, io, base64, json, attr
+import attr
 import numpy as np
-
 import torch
 import torchvision
 import torchvision.transforms as T
-from torchvision.transforms import Compose, Normalize
-
 from allenact.base_abstractions.misc import (
-    ObservationType,
     ActorCriticOutput,
     DistributionType,
     Memory,
+    ObservationType,
 )
-from allenact.utils.inference import InferenceAgent
-from allenact.utils.tensor_utils import batch_observations
 from allenact.utils import spaces_utils as su
+from allenact.utils.tensor_utils import batch_observations
+from PIL import Image
+from torchvision.transforms import Compose, Normalize
+
 from utils.constants.stretch_initialization_utils import ALL_STRETCH_ACTIONS
 from utils.string_utils import convert_string_to_byte
-from utils.transformation_util import get_full_transformation_list, sample_a_specific_transform
+from utils.transformation_util import (
+    get_full_transformation_list,
+    sample_a_specific_transform,
+)
+from utils.saferl_utils import InferenceAgent
 
 
 def tensor_image_preprocessor(
@@ -111,10 +117,46 @@ class InferenceAgentVIDA(InferenceAgent):
             mean=img_encoder_rgb_mean,
             std=img_encoder_rgb_std,
         )
+        # Load checkpoint with automatic format detection
+        ckpt = torch.load(
+            ckpt_path, map_location="cpu" if not torch.cuda.is_available() else "cuda"
+        )
+
+        # Auto-detect checkpoint format
+        if "state_dict" in ckpt:
+            state_dict_to_load = ckpt["state_dict"]
+            transformed_state_dict = {}
+            for k, v in state_dict_to_load.items():
+                new_k = k.replace("model.", "", 1) if k.startswith("model.") else k
+                if new_k == "actor.weight":
+                    new_k = "actor.linear.weight"
+                elif new_k == "actor.bias":
+                    new_k = "actor.linear.bias"
+
+                transformed_state_dict[new_k] = v
+
+            state_dict_to_load = transformed_state_dict
+
+        elif "model_state_dict" in ckpt:
+            state_dict_to_load = ckpt["model_state_dict"]
+
+        elif any(
+            k.startswith("visual_encoder.") or k.startswith("actor.") or k.startswith("decoder.")
+            for k in ckpt.keys()
+        ):
+            state_dict_to_load = ckpt
+
+        else:
+            raise ValueError(
+                f"Unknown checkpoint format. Expected one of:\n"
+                f"  1. 'state_dict' key (PyTorch Lightning)\n"
+                f"  2. 'model_state_dict' key (AllenAct)\n"
+                f"  3. Direct state_dict with model keys\n"
+                f"But found keys: {list(ckpt.keys())[:10]}..."
+            )
+
         agent.actor_critic.load_state_dict(
-            torch.load(ckpt_path, map_location="cpu" if not torch.cuda.is_available() else "cuda")[
-                "model_state_dict"
-            ],
+            state_dict_to_load,
             strict=False,
         )
 

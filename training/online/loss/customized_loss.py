@@ -14,7 +14,6 @@ from typing import Dict, Optional, Callable, cast, Tuple
 from omnisafe.common.lagrange import Lagrange
 
 
-
 class Imitation(AbstractActorCriticLoss):
     """Expert imitation loss."""
 
@@ -78,7 +77,6 @@ class Imitation(AbstractActorCriticLoss):
         )
 
 
-
 class PPOValueStopGrad(AbstractActorCriticLoss):
     """Implementation of the Proximal Policy Optimization loss.
 
@@ -95,7 +93,7 @@ class PPOValueStopGrad(AbstractActorCriticLoss):
         use_clipped_value_loss=True,
         clip_decay=None,
         *args,
-        **kwargs
+        **kwargs,
     ):
         """Initializer.
 
@@ -113,7 +111,7 @@ class PPOValueStopGrad(AbstractActorCriticLoss):
         batch: ObservationType,
         actor_critic_output: ActorCriticOutput[CategoricalDistr],
         *args,
-        **kwargs
+        **kwargs,
     ):
         if self.discrete_critics:
             logits = actor_critic_output.extras["stop_grad_logits"]
@@ -146,7 +144,12 @@ class PPOValueStopGrad(AbstractActorCriticLoss):
 
         return (
             value_loss,
-            {"value": value_loss.item(), "bias_norm": bias_norm, "weight_norm": weight_norm, "weight_grad": weight_grad},
+            {
+                "value": value_loss.item(),
+                "bias_norm": bias_norm,
+                "weight_norm": weight_norm,
+                "weight_grad": weight_grad,
+            },
         )
 
 
@@ -159,7 +162,9 @@ class PPOLogGrad(PPO):
         """
         super().__init__(*args, **kwargs)
         self.discrete_critics = discrete_critics
-        self.action_loss_schedule = action_loss_schedule if action_loss_schedule is not None else (lambda x: 1.0)
+        self.action_loss_schedule = (
+            action_loss_schedule if action_loss_schedule is not None else (lambda x: 1.0)
+        )
 
     def loss_per_step(
         self,
@@ -179,9 +184,7 @@ class PPOLogGrad(PPO):
 
         def add_trailing_dims(t: torch.Tensor):
             assert len(t.shape) <= len(batch[self.adv_key].shape)
-            return t.view(
-                t.shape + ((1,) * (len(batch[self.adv_key].shape) - len(t.shape)))
-            )
+            return t.view(t.shape + ((1,) * (len(batch[self.adv_key].shape) - len(t.shape))))
 
         dist_entropy = add_trailing_dims(dist_entropy)
 
@@ -236,34 +239,35 @@ class PPOLogGrad(PPO):
                 "entropy": (dist_entropy.mul_(-1.0), self.entropy_coef),  # type: ignore
             },
             {
-                "bias_norm": bias_norm, "weight_norm": weight_norm, "weight_grad": weight_grad,
+                "bias_norm": bias_norm,
+                "weight_norm": weight_norm,
+                "weight_grad": weight_grad,
                 "action_weight": action_weight,
                 # "ratio": ratio,
                 # "ratio_clamped": clamped_ratio,
                 # "ratio_used": torch.where(
                 #     cast(torch.Tensor, use_clamped), clamped_ratio, ratio
                 # ),
-            }
+            },
         )
+
     def loss(  # type: ignore
         self,
         step_count: int,
         batch: ObservationType,
         actor_critic_output: ActorCriticOutput[CategoricalDistr],
         *args,
-        **kwargs
+        **kwargs,
     ):
         losses_per_step, ratio_info = self.loss_per_step(
-            step_count=step_count, batch=batch, actor_critic_output=actor_critic_output,
+            step_count=step_count,
+            batch=batch,
+            actor_critic_output=actor_critic_output,
         )
-        losses = {
-            key: (loss.mean(), weight)
-            for (key, (loss, weight)) in losses_per_step.items()
-        }
+        losses = {key: (loss.mean(), weight) for (key, (loss, weight)) in losses_per_step.items()}
 
         total_loss = sum(
-            loss * weight if weight is not None else loss
-            for loss, weight in losses.values()
+            loss * weight if weight is not None else loss for loss, weight in losses.values()
         )
 
         result = (
@@ -271,7 +275,8 @@ class PPOLogGrad(PPO):
             {
                 "ppo_total": cast(torch.Tensor, total_loss).item(),
                 **{key: loss.item() for key, (loss, _) in losses.items()},
-            } | ratio_info
+            }
+            | ratio_info,
         )
 
         return result
@@ -286,8 +291,10 @@ class SafePPOLogGrad(PPO):
         """
         super().__init__(*args, **kwargs)
         self.discrete_critics = discrete_critics
-        self.action_loss_schedule = action_loss_schedule if action_loss_schedule is not None else (lambda x: 1.0)
-        self.c_adv_key = 'c_' + self.adv_key
+        self.action_loss_schedule = (
+            action_loss_schedule if action_loss_schedule is not None else (lambda x: 1.0)
+        )
+        self.c_adv_key = "c_" + self.adv_key
 
     def loss_per_step(
         self,
@@ -308,9 +315,7 @@ class SafePPOLogGrad(PPO):
 
         def add_trailing_dims(t: torch.Tensor):
             assert len(t.shape) <= len(batch[self.adv_key].shape)
-            return t.view(
-                t.shape + ((1,) * (len(batch[self.adv_key].shape) - len(t.shape)))
-            )
+            return t.view(t.shape + ((1,) * (len(batch[self.adv_key].shape) - len(t.shape))))
 
         dist_entropy = add_trailing_dims(dist_entropy)
 
@@ -323,7 +328,11 @@ class SafePPOLogGrad(PPO):
         with torch.no_grad():
             penalty = torch.tensor(lagrangian_multiplier.item())
         surr1 = ratio * (batch[self.adv_key] - penalty * batch[self.c_adv_key]) / (1.0 + penalty)
-        surr2 = clamped_ratio * (batch[self.adv_key] - penalty * batch[self.c_adv_key]) / (1.0 + penalty)
+        surr2 = (
+            clamped_ratio
+            * (batch[self.adv_key] - penalty * batch[self.c_adv_key])
+            / (1.0 + penalty)
+        )
 
         use_clamped = surr2 < surr1
         action_loss = -torch.where(cast(torch.Tensor, use_clamped), surr2, surr1)
@@ -367,34 +376,36 @@ class SafePPOLogGrad(PPO):
                 "entropy": (dist_entropy.mul_(-1.0), self.entropy_coef),  # type: ignore
             },
             {
-                "bias_norm": bias_norm, "weight_norm": weight_norm, "weight_grad": weight_grad,
+                "bias_norm": bias_norm,
+                "weight_norm": weight_norm,
+                "weight_grad": weight_grad,
                 "action_weight": action_weight,
                 # "ratio": ratio,
                 # "ratio_clamped": clamped_ratio,
                 # "ratio_used": torch.where(
                 #     cast(torch.Tensor, use_clamped), clamped_ratio, ratio
                 # ),
-            }
+            },
         )
+
     def loss(  # type: ignore
         self,
         step_count: int,
         batch: ObservationType,
         actor_critic_output: ActorCriticOutput[CategoricalDistr],
         *args,
-        **kwargs
+        **kwargs,
     ):
         losses_per_step, ratio_info = self.loss_per_step(
-            step_count=step_count, batch=batch, actor_critic_output=actor_critic_output, lagrangian_multiplier=kwargs["lagrangian_multiplier"]
+            step_count=step_count,
+            batch=batch,
+            actor_critic_output=actor_critic_output,
+            lagrangian_multiplier=kwargs["lagrangian_multiplier"],
         )
-        losses = {
-            key: (loss.mean(), weight)
-            for (key, (loss, weight)) in losses_per_step.items()
-        }
+        losses = {key: (loss.mean(), weight) for (key, (loss, weight)) in losses_per_step.items()}
 
         total_loss = sum(
-            loss * weight if weight is not None else loss
-            for loss, weight in losses.values()
+            loss * weight if weight is not None else loss for loss, weight in losses.values()
         )
 
         result = (
@@ -402,7 +413,8 @@ class SafePPOLogGrad(PPO):
             {
                 "ppo_total": cast(torch.Tensor, total_loss).item(),
                 **{key: loss.item() for key, (loss, _) in losses.items()},
-            } | ratio_info
+            }
+            | ratio_info,
         )
 
         return result
@@ -414,9 +426,7 @@ class PPOStopGrad(PPO):
         step_count: int,
         batch: ObservationType,
         actor_critic_output: ActorCriticOutput[CategoricalDistr],
-    ) -> Tuple[
-        Dict[str, Tuple[torch.Tensor, Optional[float]]], Dict[str, torch.Tensor]
-    ]:
+    ) -> Tuple[Dict[str, Tuple[torch.Tensor, Optional[float]]], Dict[str, torch.Tensor]]:
 
         actions = cast(torch.LongTensor, batch["actions"])
         # values = actor_critic_output.values
@@ -429,9 +439,7 @@ class PPOStopGrad(PPO):
 
         def add_trailing_dims(t: torch.Tensor):
             assert len(t.shape) <= len(batch[self.adv_key].shape)
-            return t.view(
-                t.shape + ((1,) * (len(batch[self.adv_key].shape) - len(t.shape)))
-            )
+            return t.view(t.shape + ((1,) * (len(batch[self.adv_key].shape) - len(t.shape))))
 
         dist_entropy = add_trailing_dims(dist_entropy)
 
@@ -455,9 +463,7 @@ class PPOStopGrad(PPO):
             value_losses_clipped = (value_pred_clipped - batch["returns"]).pow(2)
             value_loss = 0.5 * torch.max(value_losses, value_losses_clipped)
         else:
-            value_loss = 0.5 * (cast(torch.FloatTensor, batch["returns"]) - values).pow(
-                2
-            )
+            value_loss = 0.5 * (cast(torch.FloatTensor, batch["returns"]) - values).pow(2)
 
         # noinspection PyUnresolvedReferences
         return (
@@ -466,13 +472,15 @@ class PPOStopGrad(PPO):
                 "action": (action_loss, None),
                 "entropy": (dist_entropy.mul_(-1.0), self.entropy_coef),  # type: ignore
             },
-            {
-                "ratio": ratio,
-                "ratio_clamped": clamped_ratio,
-                "ratio_used": torch.where(
-                    cast(torch.Tensor, use_clamped), clamped_ratio, ratio
-                ),
-            }
-            if self.show_ratios
-            else {},
+            (
+                {
+                    "ratio": ratio,
+                    "ratio_clamped": clamped_ratio,
+                    "ratio_used": torch.where(
+                        cast(torch.Tensor, use_clamped), clamped_ratio, ratio
+                    ),
+                }
+                if self.show_ratios
+                else {}
+            ),
         )

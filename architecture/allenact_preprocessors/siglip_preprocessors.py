@@ -1,4 +1,4 @@
-from typing import List, Optional, Any, cast, Dict, Union, Sequence
+from typing import Any, Dict, List, Optional, Sequence, Union, cast
 
 import gym
 import numpy as np
@@ -8,7 +8,9 @@ from allenact.base_abstractions.preprocessor import Preprocessor
 from allenact.utils.misc_utils import prepare_locals_for_super
 from open_clip import create_model_from_pretrained
 
-from architecture.models.transformer_models.preprocessors import tensor_image_preprocessor
+from architecture.models.transformer_models.preprocessors import (
+    tensor_image_preprocessor,
+)
 
 SIGLIP_PRETRAINED_MODEL = ["ViT-B-16-SigLIP-256"]
 
@@ -53,7 +55,7 @@ class SigLIPPreprocessor(Preprocessor):
                 output_shape = (7, 12, 768)
         else:
             raise NotImplementedError(
-                f"Currently `siglip_model_type` must be one of 'ViT-B-16-SigLIP-256'."
+                "Currently `siglip_model_type` must be one of 'ViT-B-16-SigLIP-256'."
             )
 
         self.siglip_model_type = siglip_model_type

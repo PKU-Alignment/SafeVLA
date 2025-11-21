@@ -22,7 +22,6 @@ from online_evaluation.online_evaluator_worker import (
     OnlineEvaluatorWorker,
     start_worker,
 )
-# from safety_gymnasium.tasks.safe_vla import REGISTERED_TASKS
 from tasks import REGISTERED_TASKS
 from training.online.chores_dataset import ChoresDataset
 from utils.constants.objaverse_data_dirs import OBJAVERSE_HOUSES_DIR
@@ -56,8 +55,6 @@ def time_limit(seconds):
 
 def filter_task_specific_eps(tasks, task_type):
     filtered_tasks = {"train": [], "val": [], "test": []}
-
-    # 3 if statements since tasks['train'] errors out if the training set is empty, so need to uuse tasks.train
 
     if tasks.train is not None:
         for i in range(len(tasks.train)):
@@ -244,17 +241,17 @@ class OnlineEvaluatorManager:
         self.prob_randomize_materials = prob_randomize_materials
         self.prob_randomize_colors = prob_randomize_colors
         os.makedirs(self.outdir, exist_ok=self.exist_ok)
-        self.local_dataset_path="/root/pr/SafeVLA/benchmark"
+        self.local_dataset_path = "./benchmark"
         self.WorkerType = OnlineEvaluatorWorker
 
         self.logging_sensor = VideoLogging()
         self.wandb = preset_wandb
 
-        if self.eval_subset in ["train", "val"]:
-            assert len(self.list_of_tasks) == 1, "we do not support more than one for this option"
-            self.eval_samples = self.load_full_eval_samples(self.list_of_tasks[0])
-        else:
-            self.eval_samples = self.load_minival_eval_samples(self.list_of_tasks)
+        # if self.eval_subset in ["train", "val"]:
+        #     assert len(self.list_of_tasks) == 1, "we do not support more than one for this option"
+        #     self.eval_samples = self.load_full_eval_samples(self.list_of_tasks[0])
+        # else:
+        self.eval_samples = self.load_minival_eval_samples(self.list_of_tasks)
 
         if self.house_set == "procthor":
             self.houses = self.load_procthor_houses()
@@ -285,19 +282,18 @@ class OnlineEvaluatorManager:
         # Make a dictionary of tasks to list of samples
         for task in list_of_tasks:
             all_task_samples[task] = self.load_minival_eval_samples_per_task(
-                task, 
-                use_local_path=self.local_dataset_path
+                task, use_local_path=self.local_dataset_path
             )
         return all_task_samples
 
     def _load_dataset_from_local_path(
-        self, 
-        local_path: str, 
+        self,
+        local_path: str,
         task_types: Optional[List[str]] = None,
     ):
         if not os.path.exists(local_path):
             raise FileNotFoundError(f"Local path does not exist: {local_path}")
-        
+
         print(f"Loading dataset from local path: {local_path}")
         if os.path.isdir(local_path):
             data_files = []
@@ -307,44 +303,39 @@ class OnlineEvaluatorManager:
                         f"{task_type.lower()}_val.jsonl.gz",
                         f"{task_type.lower()}.jsonl.gz",
                     ]
-                    
+
                     for pattern in patterns:
                         filepath = os.path.join(local_path, pattern)
                         if os.path.exists(filepath):
                             data_files.append(filepath)
-                            print(f"  Found data file: {pattern}")
                             break
             else:
                 for file in os.listdir(local_path):
-                    if file.endswith('.jsonl.gz'):
+                    if file.endswith(".jsonl.gz"):
                         data_files.append(os.path.join(local_path, file))
-            
+
             if not data_files:
                 raise FileNotFoundError(
                     f"No matching .jsonl.gz file found in {local_path}\n"
                     f"Task types: {task_types}"
                 )
-        elif local_path.endswith('.jsonl.gz'):
+        elif local_path.endswith(".jsonl.gz"):
             data_files = [local_path]
         else:
             raise ValueError(f"Path must be a directory or .jsonl.gz file: {local_path}")
         from tqdm import tqdm
+
         split_task_list = []
         for data_file in data_files:
-            print(f"  Loading file: {os.path.basename(data_file)}")
             with gzip.open(data_file, "rt") as f:
                 tasks = [line for line in tqdm(f, desc=f"Loading {os.path.basename(data_file)}")]
                 split_task_list.extend(tasks)
         print(f"  Total loaded {len(split_task_list)} task samples")
-        data = {
-            "val": LazyJsonDataset(data=split_task_list)
-        }
+        data = {"val": LazyJsonDataset(data=split_task_list)}
         return DatasetDict(**data)
 
     def load_minival_eval_samples_per_task(
-        self, 
-        task_type: str,
-        use_local_path: Optional[str] = None
+        self, task_type: str, use_local_path: Optional[str] = None
     ) -> List[NormalizedEvalSample]:
 
         if use_local_path is not None:
@@ -372,6 +363,8 @@ class OnlineEvaluatorManager:
 
     def load_full_eval_samples(self, task_type: str) -> Dict[str, List[NormalizedEvalSample]]:
         data_dir = os.path.join(self.dataset_path, self.dataset_type)
+        with open("test.txt", "w") as f:
+            f.write(f"Loading full eval samples from: {data_dir}")
         samples = ChoresDataset(
             data_dir,
             subset=self.eval_subset,
@@ -392,13 +385,13 @@ class OnlineEvaluatorManager:
 
     def load_procthor_houses(self):
         local_houses_path = os.path.join(self.local_dataset_path, "houses")
-        
+
         houses_path = None
         if os.path.exists(local_houses_path):
             houses_path = local_houses_path
         if houses_path is None:
             raise FileNotFoundError(
-                f"Could not find houses data. Please check the following paths:\n" 
+                f"Could not find houses data. Please check the following paths:\n"
                 f"  {local_houses_path}\n"
                 f"Please prepare the houses data file (containing .jsonl.gz files in val/train/test directories)"
             )
@@ -406,7 +399,7 @@ class OnlineEvaluatorManager:
             subset = "val"
         else:
             subset = self.eval_subset
-        
+
         houses_data = load_dataset_from_path(path_to_splits=houses_path)
         return houses_data[subset]
 
@@ -456,16 +449,15 @@ class OnlineEvaluatorManager:
             subset_to_load = self.eval_subset
 
         print(f"Loading objaverse houses from: {OBJAVERSE_HOUSES_DIR}")
-        
+
         split_to_path = {
             subset_to_load: os.path.join(OBJAVERSE_HOUSES_DIR, f"{subset_to_load}.jsonl.gz")
         }
-        
+
         houses_data = load_dataset_from_path(
-            split_to_path=split_to_path,
-            max_items_per_split={subset_to_load: int(1e9)}
+            split_to_path=split_to_path, max_items_per_split={subset_to_load: int(1e9)}
         )
-        
+
         return houses_data[subset_to_load]
 
     def log_benchmark_stat(self):
@@ -499,6 +491,7 @@ class OnlineEvaluatorManager:
                 "prob_randomize_lighting": self.prob_randomize_lighting,
                 "prob_randomize_materials": self.prob_randomize_materials,
                 "prob_randomize_colors": self.prob_randomize_colors,
+                "seed": self.seed,
             }
 
             self.workers[worker_id] = self.WorkerType(
@@ -526,7 +519,7 @@ class OnlineEvaluatorManager:
 
             for sample in samples:
                 tasks_queue.put(sample)
-                tasks_list.append(sample)   
+                tasks_list.append(sample)
                 self.num_tasks_in_queue += 1
 
         print(f"{self.num_tasks_in_queue} tasks in queue")
@@ -591,7 +584,6 @@ class OnlineEvaluatorManager:
 
             new_found_results += 1
             task_type_to_results_list[task_type].append(task_metrics_video_info)
-
 
         return new_found_results
 
@@ -674,6 +666,7 @@ class OnlineEvaluatorManager:
 
         # Log whatever we found
         self.log_from_task_type_lists(task_type_to_results_list, upload=True)
+
     def log_from_task_type_lists(
         self,
         task_type_to_results_list,
@@ -683,11 +676,30 @@ class OnlineEvaluatorManager:
         upload_per_synset=None,
     ):
         all_tasks_aggregated_results = {}
-        table_plan2 = self.wandb.Table(columns=["sample_id", "cost","corner", "danger", "blind", "fragile", "critical", "success"])
+        table_plan2 = self.wandb.Table(
+            columns=[
+                "sample_id",
+                "cost",
+                "corner",
+                "danger",
+                "blind",
+                "fragile",
+                "critical",
+                "success",
+            ]
+        )
         for task_type, task_type_results in task_type_to_results_list.items():
-                for result in task_type_results:
-                    table_plan2.add_data(result[0]["sample_id"],result[0]['metrics']["cost"], result[0]['metrics']["corner"], result[0]['metrics']["danger"], \
-                        result[0]['metrics']["blind"], result[0]['metrics']["fragile"], result[0]['metrics']["critical"], int(result[0]['metrics']["success"]))
+            for result in task_type_results:
+                table_plan2.add_data(
+                    result[0]["sample_id"],
+                    result[0]["metrics"]["cost"],
+                    result[0]["metrics"]["corner"],
+                    result[0]["metrics"]["danger"],
+                    result[0]["metrics"]["blind"],
+                    result[0]["metrics"]["fragile"],
+                    result[0]["metrics"]["critical"],
+                    int(result[0]["metrics"]["success"]),
+                )
         # self.wandb.log({"plan1": table_plan1})
         self.wandb.log({f"plan2": table_plan2})
 

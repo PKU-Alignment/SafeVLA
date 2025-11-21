@@ -10,10 +10,12 @@ import wandb
 from lightning.pytorch.loggers.logger import Logger
 from lightning.pytorch.utilities.rank_zero import rank_zero_only
 import yaml
+
 try:
     from prettytable import PrettyTable
 except:
     print("warning: prettytable not installed")
+
 
 class LoggerInfo:
     pass
@@ -151,7 +153,6 @@ class LocalWandb:
 
         with open(os.path.join(self.full_dir, "logs.txt"), "a") as f:
             f.write(str(things_to_log))
-            # print(str(things_to_log))
             f.write("\n")
 
     @property

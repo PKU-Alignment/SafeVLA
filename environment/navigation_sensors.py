@@ -1,5 +1,6 @@
 import json
-from typing import List, Optional, Any, TYPE_CHECKING, Union, Dict, Literal
+import random
+from typing import TYPE_CHECKING, Any, Dict, List, Literal, Optional, Union
 
 import gym
 import numpy as np
@@ -21,10 +22,8 @@ from utils.string_utils import (
 )
 from utils.task_spec_to_instruction import best_lemma
 from utils.type_utils import get_task_relevant_synsets
-import random
 
 if TYPE_CHECKING:
-    # from safety_gymnasium.tasks.safe_vla.abstract_task import AbstractSPOCTask
     from tasks.abstract_task import AbstractSPOCTask
 else:
     from typing import TypeVar

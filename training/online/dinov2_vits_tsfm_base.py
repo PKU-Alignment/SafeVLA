@@ -8,7 +8,7 @@ import torch
 import torch.nn as nn
 from torch import optim
 
-from allenact.algorithms.onpolicy_sync.losses.ppo import PPOConfig, PPOValue, SafePPOValue
+from allenact.algorithms.onpolicy_sync.losses.ppo import PPOConfig, PPOValue
 
 from allenact.base_abstractions.preprocessor import Preprocessor
 from allenact.utils.experiment_utils import (
@@ -41,7 +41,6 @@ from utils.type_utils import RewardConfig, THORActions
 from utils.wandb_logging import SimpleWandbLogging
 
 from architecture.models.allenact_transformer_models.separate_actor_critic import (
-    DinoLLAMATxNavActorCriticSeparate,
     SafeDinoLLAMATxNavActorCriticSeparate,
 )
 
@@ -52,10 +51,11 @@ from environment.vision_sensors import (
 from environment.manipulation_sensors import AnObjectIsInHand
 
 from training.online.loss.customized_loss import PPOLogGrad, SafePPOLogGrad
+from utils.saferl_utils import SafePPOValue, SafeRolloutBlockStorage
 
 
 @dataclass
-class DinoV2ViTSTSFMObjectNavParams(BaseConfigParams):
+class DinoV2ViTSTSFMBaseParams(BaseConfigParams):
     use_data_augmentation: bool = True
     use_text_goal: bool = True
     use_bbox: bool = False
@@ -73,7 +73,7 @@ class DinoV2ViTSTSFMObjectNavParams(BaseConfigParams):
     rgb_width: int = 384
 
     # training pipeline params
-    save_interval: int = 10_000
+    save_interval: int = 50_000
     metric_accumulate_interval: int = 1_000
 
     # overwrite the BaseConfigParams tag
@@ -84,11 +84,12 @@ class DinoV2ViTSTSFMObjectNavParams(BaseConfigParams):
 
     il_ckpt_path: Optional[str] = None
 
-class DinoV2ViTSTSFMObjectNav(BaseConfig):
+
+class DinoV2ViTSTSFMBase(BaseConfig):
 
     def __init__(
         self,
-        params: DinoV2ViTSTSFMObjectNavParams,
+        params: DinoV2ViTSTSFMBaseParams,
     ):
         super().__init__(params)
         self.params = params
@@ -290,10 +291,15 @@ class DinoV2ViTSTSFMObjectNav(BaseConfig):
         batch_steps_1 = int(800000)
         batch_steps_2 = int(1e9) - batch_steps_1 - batch_steps_0
 
-        NewPPOConfig = dict(clip_param=0.1, value_loss_coef=0.5, entropy_coef=0.0,
-                            use_clipped_value_loss=False, action_loss_schedule=None,
-                            discrete_critics=False, normalize_advantage=False)
-
+        NewPPOConfig = dict(
+            clip_param=0.1,
+            value_loss_coef=0.5,
+            entropy_coef=0.0,
+            use_clipped_value_loss=False,
+            action_loss_schedule=None,
+            discrete_critics=False,
+            normalize_advantage=False,
+        )
 
         assert (
             self.params.advance_scene_rollout_period is None
@@ -306,9 +312,14 @@ class DinoV2ViTSTSFMObjectNav(BaseConfig):
             num_mini_batch=1,
             update_repeats=4,
             max_grad_norm=0.5,
-            named_losses={"ppo_log_loss": SafePPOLogGrad(**NewPPOConfig),
-                        "ppo_value_loss": PPOValue(clip_param=0.1, use_clipped_value_loss=False),
-                        "safe_ppo_value_loss": SafePPOValue(clip_param=0.1, use_clipped_value_loss=False),},
+            named_losses={
+                "ppo_log_loss": SafePPOLogGrad(**NewPPOConfig),
+                "ppo_value_loss": PPOValue(clip_param=0.1, use_clipped_value_loss=False),
+                "safe_ppo_value_loss": SafePPOValue(clip_param=0.1, use_clipped_value_loss=False),
+            },
+            named_storages={
+                "onpolicy": Builder(SafeRolloutBlockStorage),
+            },
             gamma=0.99,
             use_gae=True,
             gae_lambda=0.95,
@@ -357,10 +368,10 @@ class DinoV2ViTSTSFMObjectNav(BaseConfig):
 
 
 @dataclass
-class DinoV2ViTSTSFMObjectNavRunner(DinoV2ViTSTSFMObjectNavParams, OnPolicyRunnerMixin):
+class DinoV2ViTSTSFMBaseRunner(DinoV2ViTSTSFMBaseParams, OnPolicyRunnerMixin):
     def get_config(self):
-        return DinoV2ViTSTSFMObjectNav(self)
+        return DinoV2ViTSTSFMBase(self)
 
 
 if __name__ == "__main__":
-    fire.Fire(DinoV2ViTSTSFMObjectNavRunner)
+    fire.Fire(DinoV2ViTSTSFMBaseRunner)

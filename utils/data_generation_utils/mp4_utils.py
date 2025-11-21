@@ -15,7 +15,7 @@ def save_frames_to_mp4(
 
     if not isinstance(frames, np.ndarray):
         frames = np.array(frames)
-    
+
     # Ensure frames are contiguous in memory to avoid alignment warnings
     # This creates a properly aligned copy if needed
     frames = np.ascontiguousarray(frames, dtype=np.uint8)

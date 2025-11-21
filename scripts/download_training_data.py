@@ -47,7 +47,9 @@ def download_and_untar_file(info):
 def main():
     parser = argparse.ArgumentParser(description="Train dataset downloader.")
     parser.add_argument("--save_dir", required=True, help="Directory to save the downloaded files.")
-    parser.add_argument("--types", default="astar", help="Should be either 'astar', 'fifteen', or 'all'.")
+    parser.add_argument(
+        "--types", default="astar", help="Should be either 'astar', 'fifteen', or 'all'."
+    )
     parser.add_argument(
         "--task_types",
         default=None,

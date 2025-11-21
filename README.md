@@ -17,6 +17,7 @@
 <hr style="border: 2px solid gray;"></hr>
 
 ## Latest Updates
+- [2025-11-21] Model & Benchmark release
 - [2025-09-18] Paper accepted: SafeVLA was accept as NeurIPS 2025 Spotlight!
 - [2025-03-06] Paper released: [SafeVLA: Towards Safety Alignment of Vision-Language-Action Model via Constrained Learning](https://arxiv.org/abs/2503.03480)
 - [2025-02-28] Initial release
@@ -27,15 +28,20 @@
 
 ## Quick Start
 
-### Setting up the Python environment
+### Setting up the Docker Python environment (Recommend)
 
-Please use the pre-built image from Docker Hub:
+#### First
+```bash
+git clone https://github.com/PKU-Alignment/SafeVLA.git
+cd SafeVLA
+```
+#### Please use the pre-built image from Docker Hub:
 
 ```bash
-docker pull safevla/safevla:v0
+docker pull safevla/safevla:v1
 ```
 
-Then
+#### Then config ``script/run_docker.sh``
 
 ```bash
 export CODE_PATH=/path/to/this/repo
@@ -44,36 +50,47 @@ export DOCKER_IMAGE=safevla/safevla:v0
 docker run \
     --gpus all \
     --device /dev/dri \
-    --mount type=bind,source=${CODE_PATH},target=/root/spoc \
+    --mount type=bind,source=${CODE_PATH},target=/root/SafeVLA \
     --mount type=bind,source=${DATA_PATH},target=/root/data \
     --shm-size 50G \
     --runtime=nvidia \
+    --network=host \
+    --name safevla \
     -it ${DOCKER_IMAGE}:latest
 ```
 
-and use the following conda environment:
-
+### Or create Python environment from scratch
+#### Environment create
 ```bash
-conda activate spoc
+conda create -n safevla python==3.10 
+pip install -r requirements
 ```
-The ``Safety-CHORES`` task we proposed has been integrated into [Safety-Gymnasium](https://github.com/PKU-Alignment/safety-gymnasium/tree/main/safety_gymnasium/tasks/safe_vla)
-Then please clone ``Safety-gymnasium`` and install it:
+#### Then install allenact, AI2THOR, Allenact-plugins
 ```bash
-git clone https://github.com/PKU-Alignment/safety-gymnasium.git
-cd safety-gymnasium
-pip install -e .
-``` 
+pip install --isolated  "git+https://github.com/allenai/allenact.git@d055fc9d4533f086e0340fe0a838ed42c28d932e#egg=allenact_plugins[all]&subdirectory=allenact_plugins"
+pip install --isolated  "git+https://github.com/allenai/allenact.git@d055fc9d4533f086e0340fe0a838ed42c28d932e#egg=allenact&subdirectory=allenact"
+pip install --extra-index-url https://ai2thor-pypi.allenai.org ai2thor==0+966bd7758586e05d18f6181f459c0e90ba318bec
+pip install --isolated  omnisafe
+```
 
+#### Final install Pytorch
+```bash
+pip install torch torchvision torchaudio --extra-index-url https://download.pytorch.org/whl/cu121
+```
+Due to occasional instability in the AI2-THOR simulator, terminated evaluation or training runs may leave behind zombie processes that keep the GPU occupied, or cause NCCL failures in the system.
+For the former, you can clean up the processes with:
+```bash
+pkill -f thor-CloudRendering
+```
+For the latter, a full system reboot is required — therefore, using Docker is strongly recommended.
 ## Training
-
-
 In order to run training and evaluation you'll need:
 
 >1. The processed/optimized Objaverse assets along with their annotations.
 >2. The set of ProcTHOR-Objaverse houses you'd like to train/evaluate on.
 >3. For evaluation only, a trained model checkpoint.
 
-Below we describe how to download the assets, annotations, and the ProcTHOR-Objaverse houses. We also describe how you can use one of our pre-trained models to run evaluation.
+Below we describe how to download the assets, annotations, and the ProcTHOR-Objaverse houses. We also describe how you can use one of our pre-trained models(IL model) to run evaluation.
 
 ### Downloading assets, annotations, and houses
 
@@ -141,57 +158,67 @@ python scripts/download_il_ckpt.py --ckpt_ids spoc_IL --save_dir PATH_TO_SAVE_DI
 Run Safe RL training:
 
 ```bash
-python training/online/dinov2_vits_tsfm_rgb_augment_objectnav.py train --il_ckpt_path IL_CKPT_PATH --num_train_processes NUM_OF_TRAIN_PROCESSES --output_dir PATH_TO_RESULT --dataset_dir PATH_TO_DATASET --cost_limit COST_LIMIT --tag EXP_NAME
+python training/online/dinov2_vits_tsfm_base.py train \
+  --il_ckpt_path IL_CKPT_PATH \
+  --num_train_processes NUM_OF_TRAIN_PROCESSES \
+  --output_dir PATH_TO_SAVE_CKPT \
+  --dataset_dir PATH_TO_DATASET \
+  --cost_limit COST_LIMIT \
+  --tag EXP_NAME
 ```
-
 For example,
 
 ```bash
-python training/online/dinov2_vits_tsfm_rgb_augment_objectnav.py train --il_ckpt_path /root/data/il_ckpt/spoc_IL/model.ckpt --num_train_processes 32 --output_dir results --dataset_dir /root/data/data/astar/ObjectNavType --cost_limit 2.31964 --tag SafeVLA2.31964-ObjectNavType-RL-DinoV2-ViTS-TSFM
+python training/online/dinov2_vits_tsfm_base.py train \
+    --il_ckpt_path /root/data/il_ckpt/spoc_IL/model.ckpt \
+    --num_train_processes 32 \
+    --output_dir /root/data/results/ \
+    --dataset_dir /root/data/data/astar/ObjectNavType \
+    --cost_limit 2.31964 \
+    --tag SafeVLA2.31964-ObjectNavType-RL-DinoV2-ViTS-TSFM\
 ```
 
 ## Evaluation
 
-### Using Local Dataset Path (Offline Mode)
-
-SafeVLA 支持从本地路径加载benchmark数据。
-
-**本地数据集路径映射:**
-
-在创建 `OnlineEvaluatorManager` 时，通过 `local_dataset_path` 参数指定本地路径：
-
-```python
-from online_evaluation.online_evaluator import OnlineEvaluatorManager
+### For baseline model (IL model)
 
 
+#### Download IL model
+```
+python scripts/download_baseline_ckpt.py --ckpt_ids spoc_IL --save_dir PATH_TO_SAVE_DIR
+```
+ Config `assets/houses/data/ckpt dir` in `script/objnav.sh`
 
-# 方式1: 从自定义目录加载 (需要包含.jsonl.gz文件)
-evaluator = OnlineEvaluatorManager(
-    benchmark_revision="chores-small",
-    list_of_tasks=["PickupType"],
-    local_dataset_path="/path/to/your/benchmark",  # 目录中需包含数据文件
-    ...
-)
-
-# 方式2: 直接指定.jsonl.gz文件
-evaluator = OnlineEvaluatorManager(
-    benchmark_revision="chores-small",
-    list_of_tasks=["PickupType"],
-    local_dataset_path="/path/to/pickuptype_val.jsonl.gz",
-    ...
-)
-
-#### Downloading the trained model ckpt and evaluation results
-
-```bash
-python scripts/download_trained_ckpt.py --save_dir ckpt
-cd ckpt
-cat safevla_* | tar -xz
+```
+bash script/objnav.sh
 ```
 
-```bash
-bash scripts/objnav.bash
+
+### For baseline model (RL model)
+
+
+#### Download RL models
 ```
+python scripts/download_baseline_ckpt.py --ckpt_ids **task_type** --save_dir PATH_TO_SAVE_DIR
+```
+> task_type: fetch, pickup, objectnav
+
+Config `assets/houses/data/ckpt dir` in `script/objnav.sh`
+```
+bash script/objnav.sh
+```
+
+#### Download Safe Aligned models
+```
+python scripts/download_aligned_ckpt.py --ckpt_ids **task_type** --save_dir PATH_TO_SAVE_DIR
+```
+> task_type: fetch, pickup, objectnav
+
+Config `assets/houses/data/ckpt dir` in `script/objnav.sh`
+```
+bash script/objnav.sh
+```
+
 ---
 
 ## Citation
