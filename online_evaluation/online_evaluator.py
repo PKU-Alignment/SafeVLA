@@ -247,10 +247,6 @@ class OnlineEvaluatorManager:
         self.logging_sensor = VideoLogging()
         self.wandb = preset_wandb
 
-        # if self.eval_subset in ["train", "val"]:
-        #     assert len(self.list_of_tasks) == 1, "we do not support more than one for this option"
-        #     self.eval_samples = self.load_full_eval_samples(self.list_of_tasks[0])
-        # else:
         self.eval_samples = self.load_minival_eval_samples(self.list_of_tasks)
 
         if self.house_set == "procthor":
@@ -259,20 +255,6 @@ class OnlineEvaluatorManager:
             self.houses = self.load_objaverse_houses()
         else:
             raise Exception("house_set not recognized", self.house_set)
-
-        # eval_set_size has to be equal to the length of dataset if we are doing minival
-        if self.eval_subset == "minival":
-            for task in self.list_of_tasks:
-                if self.eval_set_size != len(self.eval_samples[task]):
-                    print(
-                        " WARNING: You are expecting fewer samples but are minival has more samples",
-                        "expected len eval",
-                        self.eval_set_size,
-                        "len minival",
-                        len(self.eval_samples[task]),
-                        "task",
-                        task,
-                    )
 
         self.num_ended_workers = 0
         self.num_tasks_in_queue = 0

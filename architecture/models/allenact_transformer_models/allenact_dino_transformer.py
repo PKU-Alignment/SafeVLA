@@ -568,6 +568,7 @@ class DinoTxGoalEncoder(nn.Module):
         for g in goals_tensor:
             g = convert_byte_to_string(g, max_len=max_len)
             goals.append(g)
+
         with torch.no_grad():
             goal_emb = self.text_tokenizer(goals, return_tensors="pt", padding=True).to(
                 observations[self.goal_uuid].device

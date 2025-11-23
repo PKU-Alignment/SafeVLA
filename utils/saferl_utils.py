@@ -1636,12 +1636,12 @@ class SafeOnPolicyRunner(OnPolicyRunner):
 
         if (
             num_workers > 1
-            and "NCCL_ASYNC_ERROR_HANDLING" not in os.environ
+            and "TORCH_NCCL_ASYNC_ERROR_HANDLING" not in os.environ
             and "NCCL_BLOCKING_WAIT" not in os.environ
         ):
             # This ensures the NCCL distributed backend will throw errors
             # if we timeout at a call to `barrier()`
-            os.environ["NCCL_ASYNC_ERROR_HANDLING"] = "1"
+            os.environ["TORCH_NCCL_ASYNC_ERROR_HANDLING"] = "1"
 
         worker_ids = self.local_worker_ids(TRAIN_MODE_STR)
 

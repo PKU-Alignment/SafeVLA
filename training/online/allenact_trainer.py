@@ -46,10 +46,7 @@ class OnPolicyRunnerMixin(abc.ABC):
 
     def train(
         self,
-        checkpoint: Optional[
-            str
-        ] = "/root/data/results/checkpoints/ObjectNav/2025-11-19_14-44-37/exp_ObjectNav__stage_02__steps_000012551992.pt",
-        # checkpoint: Optional[str] = None,
+        checkpoint: Optional[str] = None,
         restart_pipeline: bool = False,
         max_sampler_processes_per_worker: Optional[int] = None,
         collect_valid_results: bool = False,

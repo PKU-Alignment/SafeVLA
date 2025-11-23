@@ -26,9 +26,9 @@
 
 
 
-## Quick Start
+# Quick Start
 
-### Setting up the Docker Python environment (Recommend)
+## 1. Setting up the Docker Python environment (Recommend)
 
 #### First
 ```bash
@@ -45,8 +45,8 @@ docker pull safevla/safevla:v1
 
 ```bash
 export CODE_PATH=/path/to/this/repo
-export DATA_PATH=/path/to/training_data
-export DOCKER_IMAGE=safevla/safevla:v0
+export DATA_PATH=/path/to/data_dir
+export DOCKER_IMAGE=safevla/safevla:v1
 docker run \
     --gpus all \
     --device /dev/dri \
@@ -58,6 +58,7 @@ docker run \
     --name safevla \
     -it ${DOCKER_IMAGE}:latest
 ```
+> DATA_PATH: storage training data | assets | checkpoint... 
 
 ### Or create Python environment from scratch
 #### Environment create
@@ -67,10 +68,10 @@ pip install -r requirements
 ```
 #### Then install allenact, AI2THOR, Allenact-plugins
 ```bash
-pip install --isolated  "git+https://github.com/allenai/allenact.git@d055fc9d4533f086e0340fe0a838ed42c28d932e#egg=allenact_plugins[all]&subdirectory=allenact_plugins"
-pip install --isolated  "git+https://github.com/allenai/allenact.git@d055fc9d4533f086e0340fe0a838ed42c28d932e#egg=allenact&subdirectory=allenact"
-pip install --extra-index-url https://ai2thor-pypi.allenai.org ai2thor==0+966bd7758586e05d18f6181f459c0e90ba318bec
-pip install --isolated  omnisafe
+pip install --no-deps  "git+https://github.com/allenai/allenact.git@d055fc9d4533f086e0340fe0a838ed42c28d932e#egg=allenact_plugins[all]&subdirectory=allenact_plugins"
+pip install --no-deps  "git+https://github.com/allenai/allenact.git@d055fc9d4533f086e0340fe0a838ed42c28d932e#egg=allenact&subdirectory=allenact"
+pip install --no-deps  --extra-index-url https://ai2thor-pypi.allenai.org ai2thor==0+966bd7758586e05d18f6181f459c0e90ba318bec
+pip install --no-deps  omnisafe
 ```
 
 #### Final install Pytorch
@@ -78,12 +79,13 @@ pip install --isolated  omnisafe
 pip install torch torchvision torchaudio --extra-index-url https://download.pytorch.org/whl/cu121
 ```
 Due to occasional instability in the AI2-THOR simulator, terminated evaluation or training runs may leave behind zombie processes that keep the GPU occupied, or cause NCCL failures in the system.
-For the former, you can clean up the processes with:
+You can clean up the processes with:
 ```bash
 pkill -f thor-CloudRendering
 ```
 For the latter, a full system reboot is required — therefore, using Docker is strongly recommended.
-## Training
+
+## 2. Training Data and Assets Config
 In order to run training and evaluation you'll need:
 
 >1. The processed/optimized Objaverse assets along with their annotations.
@@ -92,7 +94,7 @@ In order to run training and evaluation you'll need:
 
 Below we describe how to download the assets, annotations, and the ProcTHOR-Objaverse houses. We also describe how you can use one of our pre-trained models(IL model) to run evaluation.
 
-### Downloading assets, annotations, and houses
+### 2.1 Downloading assets, annotations, and houses
 
 #### Downloading optimized Objaverse assets and annotations
 
@@ -130,12 +132,19 @@ python -m scripts.download_objaverse_houses --save_dir /path/to/objaverse_houses
 to download the validation set of houses as `/path/to/objaverse_houses/val.jsonl.gz`.
 You can also change `val` to `train` to download the training set of houses.
 
+### 2.2 Downloading training data
+Pick a directory `/path/to/training_data` where you'd like to save il data. Then run: 
+```bash
+python -m scripts.download_training_data --save_dir /path/to/training_data --task_types TASK_TYPES
+```
+> TASK_TYPES:  FetchType | PickupType | ObjectNavType
+## 3 Evaluation
 ### Setting environment variables
 
 Next you need to set the following environment variables:
 
 ```bash
-export PYTHONPATH=/path/to/code_in_docker
+export PYTHONPATH=/path/to/safevla_code
 export OBJAVERSE_HOUSES_DIR=/path/to/objaverse_houses
 export OBJAVERSE_DATA_DIR=/path/to/objaverse_assets
 ```
@@ -146,6 +155,43 @@ For training, we recommend to set two more environment variables to avoid timeou
 export ALLENACT_DEBUG=True
 export ALLENACT_DEBUG_VST_TIMEOUT=2000
 ```
+### For baseline model (IL model)
+
+```
+python scripts/download_baseline_ckpt.py --ckpt_ids spoc_IL --save_dir PATH_TO_SAVE_DIR
+```
+
+```
+bash script/eval.sh --task_type TASK_TYPE_ID --ckpt_path IL_CKPT_PATH
+```
+> TASK_TYPE_ID: 0 (ObjectNavType) | 1 (PickupType) | 2 (FetchType)
+
+### For baseline model (RL model)
+
+```
+python scripts/download_baseline_ckpt.py --ckpt_ids **task_type** --save_dir PATH_TO_SAVE_DIR
+```
+> task_type: fetch, pickup, objectnav
+
+```
+bash script/eval.sh --task_type TASK_TYPE_ID --ckpt_path RL_CKPT_PATH
+```
+### For Safe Aligned model
+```
+python scripts/download_aligned_ckpt.py --ckpt_ids **task_type** --save_dir PATH_TO_SAVE_DIR
+```
+
+```
+bash script/eval.sh --task_type TASK_TYPE_ID --ckpt_path CKPT_PATH
+```
+
+---
+
+
+## 4 Training
+
+
+
 
 ### Running Safe RL finetuning
 
@@ -177,50 +223,10 @@ python training/online/dinov2_vits_tsfm_base.py train \
     --cost_limit 2.31964 \
     --tag SafeVLA2.31964-ObjectNavType-RL-DinoV2-ViTS-TSFM\
 ```
-
-## Evaluation
-
-### For baseline model (IL model)
-
-
-#### Download IL model
+Or you can:
+```bash
+bash scripts/train.sh --task_type TASK_TYPE_ID --il_ckpt_path CKPT_PATH
 ```
-python scripts/download_baseline_ckpt.py --ckpt_ids spoc_IL --save_dir PATH_TO_SAVE_DIR
-```
- Config `assets/houses/data/ckpt dir` in `script/objnav.sh`
-
-```
-bash script/objnav.sh
-```
-
-
-### For baseline model (RL model)
-
-
-#### Download RL models
-```
-python scripts/download_baseline_ckpt.py --ckpt_ids **task_type** --save_dir PATH_TO_SAVE_DIR
-```
-> task_type: fetch, pickup, objectnav
-
-Config `assets/houses/data/ckpt dir` in `script/objnav.sh`
-```
-bash script/objnav.sh
-```
-
-#### Download Safe Aligned models
-```
-python scripts/download_aligned_ckpt.py --ckpt_ids **task_type** --save_dir PATH_TO_SAVE_DIR
-```
-> task_type: fetch, pickup, objectnav
-
-Config `assets/houses/data/ckpt dir` in `script/objnav.sh`
-```
-bash script/objnav.sh
-```
-
----
-
 ## Citation
 If you find our code or models useful in your work, please cite [our paper](https://arxiv.org/abs/2503.03480):
 ```bash
