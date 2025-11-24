@@ -47,7 +47,7 @@ class OnPolicyRunnerMixin(abc.ABC):
         self,
         checkpoint: Optional[
             str
-        ] = "/root/data/results/checkpoints/Fetch/2025-11-23_14-14-02/exp_Fetch__stage_02__steps_000024875664.pt",
+        ] = "",
         restart_pipeline: bool = False,
         max_sampler_processes_per_worker: Optional[int] = None,
         collect_valid_results: bool = False,

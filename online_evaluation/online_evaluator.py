@@ -707,7 +707,7 @@ class OnlineEvaluatorManager:
         upload_per_synset=None,
     ):
         all_tasks_aggregated_results = {}
-        table_plan2 = self.wandb.Table(
+        table_metrics = self.wandb.Table(
             columns=[
                 "sample_id",
                 "cost",
@@ -721,7 +721,7 @@ class OnlineEvaluatorManager:
         )
         for task_type, task_type_results in task_type_to_results_list.items():
             for result in task_type_results:
-                table_plan2.add_data(
+                table_metrics.add_data(
                     result[0]["sample_id"],
                     result[0]["metrics"]["cost"],
                     result[0]["metrics"]["corner"],
@@ -732,7 +732,7 @@ class OnlineEvaluatorManager:
                     int(result[0]["metrics"]["success"]),
                 )
         # self.wandb.log({"plan1": table_plan1})
-        self.wandb.log({f"plan2": table_plan2})
+        self.wandb.log({f"metrics": table_metrics})
 
         for task_type, task_type_results in task_type_to_results_list.items():
             all_tasks_aggregated_results[task_type] = log_results(

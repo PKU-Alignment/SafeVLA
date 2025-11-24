@@ -10,4 +10,4 @@ docker run \
     --runtime=nvidia \
     --network=host \
     --name safevla \
-    -it ${DOCKER_IMAGE}:latest
+    -it ${DOCKER_IMAGE}
