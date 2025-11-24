@@ -17,7 +17,9 @@ from omnisafe.common.lagrange import Lagrange
 class Imitation(AbstractActorCriticLoss):
     """Expert imitation loss."""
 
-    def __init__(self, uuid: str = "expert_pickupable", action_idx: int = 8, *args, **kwargs):
+    def __init__(
+        self, uuid: str = "expert_pickupable", action_idx: int = 8, *args, **kwargs
+    ):
         super().__init__(*args, **kwargs)
 
         self.uuid = uuid
@@ -73,7 +75,11 @@ class Imitation(AbstractActorCriticLoss):
             )
         return (
             total_loss,
-            {"expert_cross_entropy": total_loss.item(), **losses} if should_report_loss else {},
+            (
+                {"expert_cross_entropy": total_loss.item(), **losses}
+                if should_report_loss
+                else {}
+            ),
         )
 
 
@@ -132,7 +138,8 @@ class PPOValueStopGrad(AbstractActorCriticLoss):
                 value_loss = 0.5 * torch.max(value_losses, value_losses_clipped).mean()
             else:
                 value_loss = (
-                    0.5 * (cast(torch.FloatTensor, batch["returns"]) - values).pow(2).mean()
+                    0.5
+                    * (cast(torch.FloatTensor, batch["returns"]) - values).pow(2).mean()
                 )
 
         bias_norm = actor_critic_output.extras["bias_norm"]
@@ -163,7 +170,9 @@ class PPOLogGrad(PPO):
         super().__init__(*args, **kwargs)
         self.discrete_critics = discrete_critics
         self.action_loss_schedule = (
-            action_loss_schedule if action_loss_schedule is not None else (lambda x: 1.0)
+            action_loss_schedule
+            if action_loss_schedule is not None
+            else (lambda x: 1.0)
         )
 
     def loss_per_step(
@@ -184,7 +193,9 @@ class PPOLogGrad(PPO):
 
         def add_trailing_dims(t: torch.Tensor):
             assert len(t.shape) <= len(batch[self.adv_key].shape)
-            return t.view(t.shape + ((1,) * (len(batch[self.adv_key].shape) - len(t.shape))))
+            return t.view(
+                t.shape + ((1,) * (len(batch[self.adv_key].shape) - len(t.shape)))
+            )
 
         dist_entropy = add_trailing_dims(dist_entropy)
 
@@ -219,7 +230,8 @@ class PPOLogGrad(PPO):
                 value_loss = 0.5 * torch.max(value_losses, value_losses_clipped).mean()
             else:
                 value_loss = (
-                    0.5 * (cast(torch.FloatTensor, batch["returns"]) - values).pow(2).mean()
+                    0.5
+                    * (cast(torch.FloatTensor, batch["returns"]) - values).pow(2).mean()
                 )
 
         bias_norm = actor_critic_output.extras["bias_norm"]
@@ -264,10 +276,14 @@ class PPOLogGrad(PPO):
             batch=batch,
             actor_critic_output=actor_critic_output,
         )
-        losses = {key: (loss.mean(), weight) for (key, (loss, weight)) in losses_per_step.items()}
+        losses = {
+            key: (loss.mean(), weight)
+            for (key, (loss, weight)) in losses_per_step.items()
+        }
 
         total_loss = sum(
-            loss * weight if weight is not None else loss for loss, weight in losses.values()
+            loss * weight if weight is not None else loss
+            for loss, weight in losses.values()
         )
 
         result = (
@@ -292,7 +308,9 @@ class SafePPOLogGrad(PPO):
         super().__init__(*args, **kwargs)
         self.discrete_critics = discrete_critics
         self.action_loss_schedule = (
-            action_loss_schedule if action_loss_schedule is not None else (lambda x: 1.0)
+            action_loss_schedule
+            if action_loss_schedule is not None
+            else (lambda x: 1.0)
         )
         self.c_adv_key = "c_" + self.adv_key
 
@@ -315,7 +333,9 @@ class SafePPOLogGrad(PPO):
 
         def add_trailing_dims(t: torch.Tensor):
             assert len(t.shape) <= len(batch[self.adv_key].shape)
-            return t.view(t.shape + ((1,) * (len(batch[self.adv_key].shape) - len(t.shape))))
+            return t.view(
+                t.shape + ((1,) * (len(batch[self.adv_key].shape) - len(t.shape)))
+            )
 
         dist_entropy = add_trailing_dims(dist_entropy)
 
@@ -327,7 +347,11 @@ class SafePPOLogGrad(PPO):
 
         with torch.no_grad():
             penalty = torch.tensor(lagrangian_multiplier.item())
-        surr1 = ratio * (batch[self.adv_key] - penalty * batch[self.c_adv_key]) / (1.0 + penalty)
+        surr1 = (
+            ratio
+            * (batch[self.adv_key] - penalty * batch[self.c_adv_key])
+            / (1.0 + penalty)
+        )
         surr2 = (
             clamped_ratio
             * (batch[self.adv_key] - penalty * batch[self.c_adv_key])
@@ -356,7 +380,8 @@ class SafePPOLogGrad(PPO):
                 value_loss = 0.5 * torch.max(value_losses, value_losses_clipped).mean()
             else:
                 value_loss = (
-                    0.5 * (cast(torch.FloatTensor, batch["returns"]) - values).pow(2).mean()
+                    0.5
+                    * (cast(torch.FloatTensor, batch["returns"]) - values).pow(2).mean()
                 )
 
         bias_norm = actor_critic_output.extras["bias_norm"]
@@ -402,10 +427,14 @@ class SafePPOLogGrad(PPO):
             actor_critic_output=actor_critic_output,
             lagrangian_multiplier=kwargs["lagrangian_multiplier"],
         )
-        losses = {key: (loss.mean(), weight) for (key, (loss, weight)) in losses_per_step.items()}
+        losses = {
+            key: (loss.mean(), weight)
+            for (key, (loss, weight)) in losses_per_step.items()
+        }
 
         total_loss = sum(
-            loss * weight if weight is not None else loss for loss, weight in losses.values()
+            loss * weight if weight is not None else loss
+            for loss, weight in losses.values()
         )
 
         result = (
@@ -426,7 +455,9 @@ class PPOStopGrad(PPO):
         step_count: int,
         batch: ObservationType,
         actor_critic_output: ActorCriticOutput[CategoricalDistr],
-    ) -> Tuple[Dict[str, Tuple[torch.Tensor, Optional[float]]], Dict[str, torch.Tensor]]:
+    ) -> Tuple[
+        Dict[str, Tuple[torch.Tensor, Optional[float]]], Dict[str, torch.Tensor]
+    ]:
 
         actions = cast(torch.LongTensor, batch["actions"])
         # values = actor_critic_output.values
@@ -439,7 +470,9 @@ class PPOStopGrad(PPO):
 
         def add_trailing_dims(t: torch.Tensor):
             assert len(t.shape) <= len(batch[self.adv_key].shape)
-            return t.view(t.shape + ((1,) * (len(batch[self.adv_key].shape) - len(t.shape))))
+            return t.view(
+                t.shape + ((1,) * (len(batch[self.adv_key].shape) - len(t.shape)))
+            )
 
         dist_entropy = add_trailing_dims(dist_entropy)
 
@@ -463,7 +496,9 @@ class PPOStopGrad(PPO):
             value_losses_clipped = (value_pred_clipped - batch["returns"]).pow(2)
             value_loss = 0.5 * torch.max(value_losses, value_losses_clipped)
         else:
-            value_loss = 0.5 * (cast(torch.FloatTensor, batch["returns"]) - values).pow(2)
+            value_loss = 0.5 * (cast(torch.FloatTensor, batch["returns"]) - values).pow(
+                2
+            )
 
         # noinspection PyUnresolvedReferences
         return (

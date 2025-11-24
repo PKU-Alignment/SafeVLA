@@ -28,7 +28,9 @@ class StretchState:
         "extend_min": 0.243,
     }
     hand_length = 0.20  # projection into XZ plane for simplicity
-    hand_height = 0.07  # approx 7cm between hand sphere center and bottom of wrist joint
+    hand_height = (
+        0.07  # approx 7cm between hand sphere center and bottom of wrist joint
+    )
     wrist_rotation_bounds = (75, 100)  # degrees
     agent_center_y_height = (
         0.9009982347488403  # prefer this to be a constant. Not fixated on it though.
@@ -51,9 +53,12 @@ class StretchState:
             wrist_pose = self.get_wrist_pose(controller)
             base_position = self.get_base_position(controller)
             absolute_hand_position = self.get_absolute_hand_position(controller)
-            gripper_state = 0.0  # TODO this will be updated when THOR adds it to the metadata
+            gripper_state = (
+                0.0  # TODO this will be updated when THOR adds it to the metadata
+            )
             held_oids = set(
-                (True, oid) for oid in (controller.last_event.metadata["arm"]["heldObjects"] or [])
+                (True, oid)
+                for oid in (controller.last_event.metadata["arm"]["heldObjects"] or [])
             )
 
             # Initialize attributes
@@ -161,21 +166,32 @@ class StretchState:
         )
 
         for key in ["x", "z", "theta"]:
-            if final_state.base_position[key] is None or initial_state.base_position[key] is None:
+            if (
+                final_state.base_position[key] is None
+                or initial_state.base_position[key] is None
+            ):
                 diff_base[key] = 0
             else:
                 if key == "theta":
-                    diff_theta = final_state.base_position[key] - initial_state.base_position[key]
+                    diff_theta = (
+                        final_state.base_position[key]
+                        - initial_state.base_position[key]
+                    )
                     diff_base[key] = wrap_angle_to_pm180(diff_theta)
                 else:
                     diff_base[key] = final_base_pos_in_initial_agent_frame[key]
 
         diff_wrist = {}
         for key in ["y", "z", "yaw"]:
-            if final_state.wrist_pose[key] is None or initial_state.wrist_pose[key] is None:
+            if (
+                final_state.wrist_pose[key] is None
+                or initial_state.wrist_pose[key] is None
+            ):
                 diff_wrist[key] = 0
             else:
-                diff_wrist[key] = final_state.wrist_pose[key] - initial_state.wrist_pose[key]
+                diff_wrist[key] = (
+                    final_state.wrist_pose[key] - initial_state.wrist_pose[key]
+                )
         if "yaw" in diff_wrist:
             if (
                 final_state.wrist_pose["yaw"] is not None
@@ -189,14 +205,20 @@ class StretchState:
 
         diff_hand = {}
         for key in final_state.hand_position.keys():
-            if final_state.hand_position[key] is None or initial_state.hand_position[key] is None:
+            if (
+                final_state.hand_position[key] is None
+                or initial_state.hand_position[key] is None
+            ):
                 diff_hand[key] = 0
             else:
-                diff_hand[key] = final_state.hand_position[key] - initial_state.hand_position[key]
+                diff_hand[key] = (
+                    final_state.hand_position[key] - initial_state.hand_position[key]
+                )
 
         diff_gripper = (
             0
-            if final_state.gripper_openness is None or initial_state.gripper_openness is None
+            if final_state.gripper_openness is None
+            or initial_state.gripper_openness is None
             else final_state.gripper_openness - initial_state.gripper_openness
         )
 
@@ -258,12 +280,19 @@ class StretchState:
                 "hand_position, gripper_openness, held_oids"
             )
 
-        return cls.difference(final_state=goal_state, initial_state=current_state), goal_state
+        return (
+            cls.difference(final_state=goal_state, initial_state=current_state),
+            goal_state,
+        )
 
     @staticmethod
-    def _create_difference_state(diff_base, diff_wrist, diff_hand, diff_gripper, diff_held_oids):
+    def _create_difference_state(
+        diff_base, diff_wrist, diff_hand, diff_gripper, diff_held_oids
+    ):
         # Helper method to create a new StretchState representing the difference
-        difference_state = StretchState(None)  # Initialize with a dummy controller for now
+        difference_state = StretchState(
+            None
+        )  # Initialize with a dummy controller for now
 
         difference_state._base_position = diff_base
         difference_state._wrist_pose = diff_wrist
@@ -302,8 +331,12 @@ class StretchState:
             "held_oids": [],
         }
         base_position_within_tolerance = True
-        rss = math.sqrt(delta_state.base_position["x"] ** 2 + delta_state.base_position["z"] ** 2)
-        threshold = math.sqrt(tolerance.base_position["x"] ** 2 + tolerance.base_position["z"] ** 2)
+        rss = math.sqrt(
+            delta_state.base_position["x"] ** 2 + delta_state.base_position["z"] ** 2
+        )
+        threshold = math.sqrt(
+            tolerance.base_position["x"] ** 2 + tolerance.base_position["z"] ** 2
+        )
         if rss > threshold:
             exceeding_params["base_position"].extend(["x", "z"])
             base_position_within_tolerance = False
@@ -380,7 +413,9 @@ class StretchState:
         # Maximum value extension per simulation: 'z': 0.759
         # Minimum value extension per simulation: 'z': 0.243
         wrist_yaw = math.fmod(
-            final_joint["rootRelativeRotation"]["w"] * final_joint["rootRelativeRotation"]["y"], 360
+            final_joint["rootRelativeRotation"]["w"]
+            * final_joint["rootRelativeRotation"]["y"],
+            360,
         )  # [-180,180]
 
         return {
@@ -432,7 +467,9 @@ def position_rotation_from_mat(matrix):
     return result
 
 
-def convert_world_to_relative_coordinate(world_obj, relative_location, relative_rotation):
+def convert_world_to_relative_coordinate(
+    world_obj, relative_location, relative_rotation
+):
     agent_translation = [
         relative_location["x"],
         relative_location["y"] or 0,
@@ -445,14 +482,18 @@ def convert_world_to_relative_coordinate(world_obj, relative_location, relative_
         obj_matrix = make_rotation_matrix(world_obj["position"], world_obj["rotation"])
     else:
         obj_matrix = make_rotation_matrix(world_obj, rotation=None)
-    obj_translation = np.matmul(inverse_agent_rotation, (obj_matrix[:3, 3] - agent_translation))
+    obj_translation = np.matmul(
+        inverse_agent_rotation, (obj_matrix[:3, 3] - agent_translation)
+    )
     # add rotation later
     obj_matrix[:3, 3] = obj_translation
     result = position_rotation_from_mat(obj_matrix)["position"]
     return result
 
 
-def convert_world_to_agent_coordinate(world_point, agent_state: StretchState, arm=False):
+def convert_world_to_agent_coordinate(
+    world_point, agent_state: StretchState, arm=False
+):
     agent_base_pos = {
         "x": agent_state.base_position["x"],
         "y": agent_state.agent_center_y_height,
@@ -471,7 +512,9 @@ def convert_world_to_agent_coordinate(world_point, agent_state: StretchState, ar
         return obj_in_agent
 
 
-def convert_relative_to_world_coordinate(agent_relative_point, agent_state: StretchState):
+def convert_relative_to_world_coordinate(
+    agent_relative_point, agent_state: StretchState
+):
     agent_translation = np.array(
         [
             agent_state.base_position["x"],
@@ -479,9 +522,15 @@ def convert_relative_to_world_coordinate(agent_relative_point, agent_state: Stre
             agent_state.base_position["z"],
         ]
     )
-    agent_rotation = R.from_euler("y", agent_state.base_position["theta"], degrees=True).as_matrix()
+    agent_rotation = R.from_euler(
+        "y", agent_state.base_position["theta"], degrees=True
+    ).as_matrix()
     agent_relative_point = np.array(
-        [agent_relative_point["x"], agent_relative_point["y"], agent_relative_point["z"]]
+        [
+            agent_relative_point["x"],
+            agent_relative_point["y"],
+            agent_relative_point["z"],
+        ]
     )
     world_point = np.matmul(agent_rotation, agent_relative_point) + agent_translation
     return {"x": world_point[0], "y": world_point[1], "z": world_point[2]}

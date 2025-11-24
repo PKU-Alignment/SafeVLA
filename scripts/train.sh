@@ -4,21 +4,20 @@ export OBJAVERSE_DATA_DIR=/path/to/objaverse_assets
 export HF_ENDPOINT=https://hf-mirror.com
 export ALLENACT_DEBUG=True
 export ALLENACT_DEBUG_VST_TIMEOUT=2000
-
 if [ $# -lt 2 ]; then
     echo "Usage: $0 <task_type> <ckpt_path>"
-    echo "  task_type: 0 (ObjectNavType) | 1 (PickupType) | 2 (FetchType)"
-    echo "  ckpt_path: Path to IL checkpoint file"
+    echo "  task_type: objectnav | pickup | fetch"
+    echo "  ckpt_path: Path to checkpoint file"
     exit 1
 fi
 
 task_type=$1
 il_ckpt_path=$2
-if [ "$task_type" == "0" ]; then
+if [ "$task_type" == "objectnav" ]; then
     task_type="ObjectNavType"
-elif [ "$task_type" == "1" ]; then
+elif [ "$task_type" == "pickup" ]; then
     task_type="PickupType"
-elif [ "$task_type" == "2" ]; then
+elif [ "$task_type" == "fetch" ]; then
     task_type="FetchType"
 else
     echo "Invalid task type"

@@ -22,7 +22,9 @@ from utils.visualization_utils import add_bbox_sequence_to_frame_sequence
 
 
 class ChoresDataReader:
-    def __init__(self, data_dir, subset, proc_idx=0, num_procs=1, max_samples=None, seed=123):
+    def __init__(
+        self, data_dir, subset, proc_idx=0, num_procs=1, max_samples=None, seed=123
+    ):
         self.data_dir = data_dir
         self.subset = subset
         self.proc_idx = proc_idx
@@ -41,12 +43,16 @@ class ChoresDataReader:
             house_id_to_sub_house_id = json.load(f)
 
         house_ids = sorted(list(house_id_to_sub_house_id.keys()))
-        assert len(house_ids) > 0, f"{self.data_dir}/{self.subset} doesn't exist or has no houses"
+        assert (
+            len(house_ids) > 0
+        ), f"{self.data_dir}/{self.subset} doesn't exist or has no houses"
 
         random.seed(self.seed)
         random.shuffle(house_ids)
         house_ids = [
-            house_id for i, house_id in enumerate(house_ids) if i % self.num_procs == proc_idx
+            house_id
+            for i, house_id in enumerate(house_ids)
+            if i % self.num_procs == proc_idx
         ]
 
         # read samples from all the houses w/o reading in the sensors from hdf5
@@ -81,14 +87,20 @@ class ChoresDataReader:
     def get_max_samples(self):
         # the max samples allowed for DDP is the min of samples read in all procs
         return min(
-            [len(self.load_samples_for_proc_idx(proc_idx)) for proc_idx in range(self.num_procs)]
+            [
+                len(self.load_samples_for_proc_idx(proc_idx))
+                for proc_idx in range(self.num_procs)
+            ]
         )
 
     def partial_load_samples(self):
         return self.load_samples_for_proc_idx(self.proc_idx)
 
     def read_sensors(
-        self, sensors_path, sub_house_id, additional_sensor_keys: Optional[List[str]] = None
+        self,
+        sensors_path,
+        sub_house_id,
+        additional_sensor_keys: Optional[List[str]] = None,
     ):
         if additional_sensor_keys is None:
             additional_sensor_keys = []
@@ -143,14 +155,17 @@ class ChoresDataReader:
                     num_boxes = grp[k]["min_cols"].shape[1]
 
                     oids = eval(convert_byte_to_string(grp[k]["oids_as_bytes"][0]))
-                    assert len(oids) == num_boxes, "Number of oids and boxes don't match"
+                    assert (
+                        len(oids) == num_boxes
+                    ), "Number of oids and boxes don't match"
 
                     tgt_1_ids = []
                     tgt_2_ids = []
 
                     if "broad_synset_to_object_ids" in task_dict:
                         tgt_1_ids = [
-                            val for val in task_dict["broad_synset_to_object_ids"].values()
+                            val
+                            for val in task_dict["broad_synset_to_object_ids"].values()
                         ]
                         tgt_1_ids = sum(tgt_1_ids, [])
 
@@ -162,10 +177,26 @@ class ChoresDataReader:
                             res = np.zeros((len(grp[k]["min_cols"]), 5))
                             res[:, :4] = 1000  # res[:, 4] = 0 by default
                             return res
-                        x1 = grp[k]["min_cols"][:, object_indices].astype(int).astype(np.float32)
-                        y1 = grp[k]["min_rows"][:, object_indices].astype(int).astype(np.float32)
-                        x2 = grp[k]["max_cols"][:, object_indices].astype(int).astype(np.float32)
-                        y2 = grp[k]["max_rows"][:, object_indices].astype(int).astype(np.float32)
+                        x1 = (
+                            grp[k]["min_cols"][:, object_indices]
+                            .astype(int)
+                            .astype(np.float32)
+                        )
+                        y1 = (
+                            grp[k]["min_rows"][:, object_indices]
+                            .astype(int)
+                            .astype(np.float32)
+                        )
+                        x2 = (
+                            grp[k]["max_cols"][:, object_indices]
+                            .astype(int)
+                            .astype(np.float32)
+                        )
+                        y2 = (
+                            grp[k]["max_rows"][:, object_indices]
+                            .astype(int)
+                            .astype(np.float32)
+                        )
                         if np.any(x1 > x2):
                             x1, x2 = x2, x1
                         if np.any(y1 > y2):
@@ -216,18 +247,24 @@ class ChoresDataset(Dataset):
         reduce_action_redundancy=False,
     ):
         self.data_dir = data_dir
-        self.reader = ChoresDataReader(data_dir, subset, proc_idx, num_procs, max_samples)
+        self.reader = ChoresDataReader(
+            data_dir, subset, proc_idx, num_procs, max_samples
+        )
         self.load_frames = load_frames
         self.sliding_window = sliding_window
         self.samples = self.reader.partial_load_samples()
         self.visual_sensors = [x for x in input_sensors if is_a_visual_sensor(x)]
-        self.non_visual_sensors = [x for x in input_sensors if not is_a_visual_sensor(x)]
+        self.non_visual_sensors = [
+            x for x in input_sensors if not is_a_visual_sensor(x)
+        ]
         self.reduce_action_redundancy = reduce_action_redundancy
         self.add_boxes_to_img = False
 
         assert (
             not self.reduce_action_redundancy
-        ) or subset == "train", "Reducing action redundancy is currently only supported for train."
+        ) or subset == "train", (
+            "Reducing action redundancy is currently only supported for train."
+        )
 
         self.prob_sample_last_steps = 0
 
@@ -237,7 +274,9 @@ class ChoresDataset(Dataset):
     def set_prob_sample_last_steps(self, prob):
         self.prob_sample_last_steps = prob
 
-    def select_window_slice(self, len_of_time_inds: int, start_idx=None, sliding_window=None):
+    def select_window_slice(
+        self, len_of_time_inds: int, start_idx=None, sliding_window=None
+    ):
         if sliding_window is None:
             sliding_window = self.sliding_window
 
@@ -286,7 +325,9 @@ class ChoresDataset(Dataset):
 
         num_to_remove = int(
             np.random.binomial(
-                len(candidate_time_inds_to_remove), p=1 - action_subsample_factor, size=1
+                len(candidate_time_inds_to_remove),
+                p=1 - action_subsample_factor,
+                size=1,
             )[0]
         )
         # Always keep at least sliding_window number of actions
@@ -295,7 +336,11 @@ class ChoresDataset(Dataset):
         time_inds_to_remove = set(candidate_time_inds_to_remove[:num_to_remove])
 
         new_time_inds = np.array(
-            [time_ind for time_ind in range(len(actions)) if time_ind not in time_inds_to_remove]
+            [
+                time_ind
+                for time_ind in range(len(actions))
+                if time_ind not in time_inds_to_remove
+            ]
         )
 
         return new_time_inds[
@@ -361,23 +406,28 @@ class ChoresDataset(Dataset):
             for sensor_name in self.non_visual_sensors:
                 if sensor_name in ["rooms_seen", "room_current_seen"]:
                     input_sensors[sensor_name] = sensors[sensor_name][select_indices]
-                    output_sensors[f"{sensor_name}_output"] = sensors[f"{sensor_name}_output"][
-                        select_indices
-                    ]
+                    output_sensors[f"{sensor_name}_output"] = sensors[
+                        f"{sensor_name}_output"
+                    ][select_indices]
                 elif sensor_name == "last_actions":
-                    input_sensors[sensor_name] = np.array(sensors["last_action_str"][:-1])[
-                        select_indices
-                    ]
+                    input_sensors[sensor_name] = np.array(
+                        sensors["last_action_str"][:-1]
+                    )[select_indices]
 
                 else:
                     # The sensors are created after the action is taken. So they have to
                     # include an additional step in the beginning similar to the first
                     # action, as a result we should only take the first n-1 sensors, ask KE for more details
-                    input_sensors[sensor_name] = sensors[sensor_name][:-1][select_indices]
+                    input_sensors[sensor_name] = sensors[sensor_name][:-1][
+                        select_indices
+                    ]
 
                     if (
                         sensor_name
-                        in ["nav_task_relevant_object_bbox", "manip_task_relevant_object_bbox"]
+                        in [
+                            "nav_task_relevant_object_bbox",
+                            "manip_task_relevant_object_bbox",
+                        ]
                         and self.add_boxes_to_img
                     ):
                         raise NotImplementedError(

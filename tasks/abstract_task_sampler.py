@@ -49,13 +49,16 @@ class AbstractSPOCTaskSampler(TaskSampler):
         self.always_allocate_a_new_stretch_controller_when_reset = (
             always_allocate_a_new_stretch_controller_when_reset
         )
-        self.settle_physics_for_seconds_when_reset = settle_physics_for_second_when_reset
+        self.settle_physics_for_seconds_when_reset = (
+            settle_physics_for_second_when_reset
+        )
         assert (
             PHYSICS_SETTLING_TIME == settle_physics_for_second_when_reset
         ), "Currently not allowed! Chat with Luca/Kiana before allowing different values."
 
         house_index_to_local_index = {
-            house_index: local_index for local_index, house_index in enumerate(house_inds)
+            house_index: local_index
+            for local_index, house_index in enumerate(house_inds)
         }
         self.house_index_to_house = KeyedDefaultDict(
             lambda house_index: houses[house_index_to_local_index[house_index]]
@@ -153,7 +156,9 @@ class AbstractSPOCTaskSampler(TaskSampler):
                 agent_pose = self.controller.get_current_agent_full_pose()
 
             if self.always_allocate_a_new_stretch_controller_when_reset:
-                self.allocate_a_new_stretch_controller(use_original_ai2thor_controller=True)
+                self.allocate_a_new_stretch_controller(
+                    use_original_ai2thor_controller=True
+                )
 
             if self.current_house is None:
                 raise HouseInvalidForTaskException(
@@ -192,7 +197,9 @@ class AbstractSPOCTaskSampler(TaskSampler):
         try:
             self.controller.reset(scene=self.current_house)
         except TimeoutError:
-            self.allocate_a_new_stretch_controller(use_original_ai2thor_controller=False)
+            self.allocate_a_new_stretch_controller(
+                use_original_ai2thor_controller=False
+            )
             self.controller.reset(scene=self.current_house)
 
     def allocate_a_new_stretch_controller(self, use_original_ai2thor_controller):
@@ -205,7 +212,8 @@ class AbstractSPOCTaskSampler(TaskSampler):
 
         try:
             self.controller = self.controller_type(
-                initialize_controller=not use_original_ai2thor_controller, **self.controller_args
+                initialize_controller=not use_original_ai2thor_controller,
+                **self.controller_args,
             )
         except TimeoutError:
             if hasattr(self, "controller"):

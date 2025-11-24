@@ -9,7 +9,12 @@ from allenact.utils.misc_utils import prepare_locals_for_super
 
 from utils.transformation_util import get_transformation, sample_a_specific_transform
 
-DINO_PRETRAINED_MODEL = ["dinov2_vits14", "dinov2_vitb14", "dinov2_vitl14", "dinov2_vitg14"]
+DINO_PRETRAINED_MODEL = [
+    "dinov2_vits14",
+    "dinov2_vitb14",
+    "dinov2_vitl14",
+    "dinov2_vitg14",
+]
 
 
 class DinoViTEmbedder(nn.Module):
@@ -86,7 +91,9 @@ class DinoViTPreprocessor(Preprocessor):
         shape = output_shape
 
         input_uuids = [rgb_input_uuid]
-        assert len(input_uuids) == 1, "resnet preprocessor can only consume one observation type"
+        assert (
+            len(input_uuids) == 1
+        ), "resnet preprocessor can only consume one observation type"
 
         observation_space = gym.spaces.Box(low=low, high=high, shape=shape)
 
@@ -163,8 +170,12 @@ class DataAugmentationPreprocessor(Preprocessor):
         device: Optional[torch.device] = None,
         device_ids: Optional[List[torch.device]] = None,
         normalize: bool = True,
-        mean: Optional[Union[np.ndarray, Sequence[float]]] = DinoViTPreprocessor.DINO_RGB_MEANS,
-        stdev: Optional[Union[np.ndarray, Sequence[float]]] = DinoViTPreprocessor.DINO_RGB_STDS,
+        mean: Optional[
+            Union[np.ndarray, Sequence[float]]
+        ] = DinoViTPreprocessor.DINO_RGB_MEANS,
+        stdev: Optional[
+            Union[np.ndarray, Sequence[float]]
+        ] = DinoViTPreprocessor.DINO_RGB_STDS,
         height: Optional[int] = None,
         width: Optional[int] = None,
         output_channels: Optional[int] = 3,
@@ -180,7 +191,9 @@ class DataAugmentationPreprocessor(Preprocessor):
         self._vit: Optional[DinoViTEmbedder] = None
 
         self.normalize = normalize
-        self.mean = torch.from_numpy(np.array(mean, dtype=np.float32).reshape((1, len(mean), 1, 1)))
+        self.mean = torch.from_numpy(
+            np.array(mean, dtype=np.float32).reshape((1, len(mean), 1, 1))
+        )
         self.stdev = torch.from_numpy(
             np.array(stdev, dtype=np.float32).reshape((1, len(stdev), 1, 1))
         )
@@ -194,7 +207,9 @@ class DataAugmentationPreprocessor(Preprocessor):
         shape = (cast(int, height), cast(int, width), cast(int, output_channels))
 
         input_uuids = [rgb_input_uuid]
-        assert len(input_uuids) == 1, "resnet preprocessor can only consume one observation type"
+        assert (
+            len(input_uuids) == 1
+        ), "resnet preprocessor can only consume one observation type"
 
         observation_space = gym.spaces.Box(low=low, high=high, shape=shape)
 

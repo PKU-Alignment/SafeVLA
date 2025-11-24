@@ -68,7 +68,9 @@ class TaskSpecSamplerDatasetWrapper(TaskSpecSampler):
             force_advance_scene is False and house_index is None
         ), "force_advance_scene and house_index are not supported by TaskSpecSamplerDatasetWrapper."
         self.dataset_iterator_index += 1
-        self.last_task_spec = map_task_spec(self.task_spec_dataset[self.dataset_iterator_index])
+        self.last_task_spec = map_task_spec(
+            self.task_spec_dataset[self.dataset_iterator_index]
+        )
         return self.last_task_spec
 
     def __len__(self) -> Union[int, float]:
@@ -126,7 +128,9 @@ class TaskSpecDatasetInfiniteList(TaskSpecDataset):
 
     def __getitem__(self, index: int) -> TaskSpec:
         if index not in [self.last_index + 1, self.last_index]:
-            raise ValueError("TaskSpecDatasetInfiniteList can only be accessed sequentially")
+            raise ValueError(
+                "TaskSpecDatasetInfiniteList can only be accessed sequentially"
+            )
 
         if index == self.last_index + 1:
             self.last_index = index
@@ -172,7 +176,9 @@ class TaskSpecSamplerInfiniteList(TaskSpecSampler):
 
         if house_index is not None:
             if house_index not in self.house_index_to_task_specs:
-                raise ValueError(f"House index {house_index} not in `house_index_to_task_specs`")
+                raise ValueError(
+                    f"House index {house_index} not in `house_index_to_task_specs`"
+                )
 
             if house_index not in self.house_inds:
                 self.reset_houses_inds_list()
@@ -189,7 +195,9 @@ class TaskSpecSamplerInfiniteList(TaskSpecSampler):
             # If we're not being forced to advance, and we're repeating houses, then do nothing
             pass
 
-        self.specs_for_current_house = [*self.house_index_to_task_specs[self.current_house_ind]]
+        self.specs_for_current_house = [
+            *self.house_index_to_task_specs[self.current_house_ind]
+        ]
 
         if self.shuffle:
             random.shuffle(self.specs_for_current_house)
@@ -197,8 +205,14 @@ class TaskSpecSamplerInfiniteList(TaskSpecSampler):
     def next_task_spec(
         self, force_advance_scene: bool = False, house_index: Optional[int] = None
     ) -> TaskSpec:
-        if force_advance_scene or len(self.specs_for_current_house) == 0 or house_index is not None:
-            self.advance_house(force_advance_scene=force_advance_scene, house_index=house_index)
+        if (
+            force_advance_scene
+            or len(self.specs_for_current_house) == 0
+            or house_index is not None
+        ):
+            self.advance_house(
+                force_advance_scene=force_advance_scene, house_index=house_index
+            )
 
         self.last_task_spec = map_task_spec(self.specs_for_current_house.pop())
         return self.last_task_spec
@@ -224,7 +238,9 @@ class TaskSpecQueue(TaskSpecSampler):
     def next_task_spec(
         self, force_advance_scene: bool = False, house_index: Optional[int] = None
     ) -> TaskSpec:
-        self.last_task_spec = normalized_eval_sample_to_task_spec(self.queue.get(timeout=5))
+        self.last_task_spec = normalized_eval_sample_to_task_spec(
+            self.queue.get(timeout=5)
+        )
         return self.last_task_spec
 
     def __len__(self) -> Union[int, float]:

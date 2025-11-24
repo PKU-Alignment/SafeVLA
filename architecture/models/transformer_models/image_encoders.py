@@ -82,7 +82,9 @@ class SigLIP(nn.Module):
     def __init__(self, cfg: Dinov2Config):
         super().__init__()
         self.cfg = cfg
-        siglip_full_model = create_model_from_pretrained("hf-hub:timm/{}".format(cfg.model))
+        siglip_full_model = create_model_from_pretrained(
+            "hf-hub:timm/{}".format(cfg.model)
+        )
         self.model = siglip_full_model[0].visual.trunk
         self.context_length = siglip_full_model[0].context_length
         self.pool = nn.AdaptiveAvgPool2d(cfg.output_size[1:])
@@ -104,5 +106,8 @@ IMAGE_ENCODERS = dict(
     Dinov2Base=(Dinov2, Dinov2Config(model="dinov2_vitb14", output_size=(768, 7, 12))),
     ClipResNet50=(ClipResNet, ClipResNetConfig()),
     SigLIPBase=(SigLIP, SigLIPConfig()),
-    SigLIPLarge=(SigLIP, SigLIPConfig(model="ViT-L-16-SigLIP-256", output_size=(1024, 7, 12))),
+    SigLIPLarge=(
+        SigLIP,
+        SigLIPConfig(model="ViT-L-16-SigLIP-256", output_size=(1024, 7, 12)),
+    ),
 )

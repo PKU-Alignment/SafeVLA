@@ -59,7 +59,9 @@ class EarlyFusionCnnTransformer(nn.Module):
             "NonTxMultiCameraVisualEncoder",
         ], "not implemented for other classes yet"
 
-        self.visual_encoder = globals()[self.cfg.visual_text_encoder_class](self.cfg.visual_encoder)
+        self.visual_encoder = globals()[self.cfg.visual_text_encoder_class](
+            self.cfg.visual_encoder
+        )
         if cfg.use_llama_decoder:
             llama_params = LLAMAModelArgs(
                 dim=cfg.decoder.d_model,
@@ -73,12 +75,16 @@ class EarlyFusionCnnTransformer(nn.Module):
         else:
             self.decoder = nn.TransformerDecoder(
                 nn.TransformerDecoderLayer(
-                    d_model=self.cfg.decoder.d_model, nhead=self.cfg.decoder.nhead, batch_first=True
+                    d_model=self.cfg.decoder.d_model,
+                    nhead=self.cfg.decoder.nhead,
+                    batch_first=True,
                 ),
                 num_layers=self.cfg.decoder.num_layers,
             )
         self.actor = nn.Linear(self.cfg.decoder.d_model, self.cfg.num_actions)
-        self.time_encoder = PositionalEncoder(self.cfg.decoder.d_model, self.cfg.max_length)
+        self.time_encoder = PositionalEncoder(
+            self.cfg.decoder.d_model, self.cfg.max_length
+        )
         self.ce_loss = nn.CrossEntropyLoss(ignore_index=-1)
 
         self.input_sensors = self.cfg.visual_encoder.input_sensors
@@ -120,7 +126,9 @@ class EarlyFusionCnnTransformer(nn.Module):
         time_ids,
         text_features=None,
     ):
-        task_relevant_object_bbox = non_visual_sensors.get("task_relevant_object_bbox", None)
+        task_relevant_object_bbox = non_visual_sensors.get(
+            "task_relevant_object_bbox", None
+        )
         manip_task_relevant_object_bbox = non_visual_sensors.get(
             "manip_task_relevant_object_box", None
         )
@@ -133,7 +141,9 @@ class EarlyFusionCnnTransformer(nn.Module):
         )
 
         if "last_actions" in non_visual_sensors:
-            last_actions_enc = self.last_actions_embed(non_visual_sensors["last_actions"])
+            last_actions_enc = self.last_actions_embed(
+                non_visual_sensors["last_actions"]
+            )
             visual_feats = visual_feats + last_actions_enc
 
         if "an_object_is_in_hand" in non_visual_sensors:
@@ -147,8 +157,12 @@ class EarlyFusionCnnTransformer(nn.Module):
 
         return visual_feats, text_feats
 
-    def decode_and_get_logits(self, embedded_features, text_feats, padding_mask=None, start_pos=0):
-        causal_mask = create_causal_mask(embedded_features.shape[1], embedded_features.device)
+    def decode_and_get_logits(
+        self, embedded_features, text_feats, padding_mask=None, start_pos=0
+    ):
+        causal_mask = create_causal_mask(
+            embedded_features.shape[1], embedded_features.device
+        )
         if self.cfg.use_llama_decoder:
             if start_pos > 0:
                 embedded_features = embedded_features[:, start_pos:]
@@ -168,7 +182,9 @@ class EarlyFusionCnnTransformer(nn.Module):
         time_ids = batch["time_ids"]
         padding_mask = batch["padding_mask"]
 
-        visual_sensors = {key: obs for (key, obs) in batch.items() if is_a_visual_sensor(key)}
+        visual_sensors = {
+            key: obs for (key, obs) in batch.items() if is_a_visual_sensor(key)
+        }
         non_visual_sensors = {
             key: obs for (key, obs) in batch.items() if is_a_non_visual_sensor(key)
         }
@@ -350,7 +366,9 @@ class EarlyFusionCnnTransformer(nn.Module):
 
 
 class EarlyFusionCnnTransformerAgent:
-    def __init__(self, model, preprocessor, device, sampling="greedy", max_seq_len=1000):
+    def __init__(
+        self, model, preprocessor, device, sampling="greedy", max_seq_len=1000
+    ):
         self.model = model
         self.preprocessor = preprocessor
         self.device = device
@@ -386,7 +404,8 @@ class EarlyFusionCnnTransformerAgent:
 
     def process_sensors_for_model_eval(self, observations):
         observations = {
-            k: torch.tensor(np.array([v])).to(self.device) for (k, v) in observations.items()
+            k: torch.tensor(np.array([v])).to(self.device)
+            for (k, v) in observations.items()
         }
 
         frames_dict = {
@@ -415,7 +434,9 @@ class EarlyFusionCnnTransformerAgent:
             )
 
         if "an_object_is_in_hand" in self.model.input_sensors:
-            observations["an_object_is_in_hand"] = observations["an_object_is_in_hand"][:, 0]
+            observations["an_object_is_in_hand"] = observations["an_object_is_in_hand"][
+                :, 0
+            ]
             preprocessed_nonvisual_sensors["an_object_is_in_hand"] = (
                 self.preprocessor.process_objinhand([observations])
             )
@@ -429,16 +450,21 @@ class EarlyFusionCnnTransformerAgent:
         processed_observations = self.process_sensors_for_model_eval(observations)
 
         if self.curr_t == 0:
-            if isinstance(self.preprocessor.text_preprocessor, (TextTransformer, HFTokenizer)):
+            if isinstance(
+                self.preprocessor.text_preprocessor, (TextTransformer, HFTokenizer)
+            ):
                 goal = self.preprocessor.text_preprocessor(
-                    [goal_spec], context_length=self.preprocessor.cfg.text_encoder_context_length
+                    [goal_spec],
+                    context_length=self.preprocessor.cfg.text_encoder_context_length,
                 ).to(self.preprocessor.device)
                 # mask = goal != 1  # siglip tokenizer pads with 1
                 # cols_to_keep = torch.any(mask, dim=0)
                 # goal = goal[:, cols_to_keep]
                 self.cache["goal"] = goal
             else:
-                goal = self.preprocessor.text_preprocessor([goal_spec], return_tensors="pt")
+                goal = self.preprocessor.text_preprocessor(
+                    [goal_spec], return_tensors="pt"
+                )
                 self.cache["goal"] = {k: v.to(self.device) for k, v in goal.items()}
 
             text_feats = self.model.visual_encoder.encode_text(self.cache["goal"])
@@ -466,7 +492,9 @@ class EarlyFusionCnnTransformerAgent:
         if self.curr_t >= self.max_seq_len:
             decoder_input = decoder_input[:, -self.max_seq_len :]
 
-        logits = self.model.decode_and_get_logits(decoder_input, text_feats, start_pos=self.curr_t)
+        logits = self.model.decode_and_get_logits(
+            decoder_input, text_feats, start_pos=self.curr_t
+        )
 
         curr_logits = logits["actions_logits"][0, -1]
         action_idx = sample_action_index_from_logits(

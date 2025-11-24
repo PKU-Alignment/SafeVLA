@@ -27,7 +27,11 @@ from training.online.chores_dataset import ChoresDataset
 from utils.constants.objaverse_data_dirs import OBJAVERSE_HOUSES_DIR
 from utils.data_utils import LazyJsonDataset, load_dataset_from_path, DatasetDict
 
-mp = mp.get_context("forkserver") if torch.cuda.is_available() else mp.get_context("spawn")
+mp = (
+    mp.get_context("forkserver")
+    if torch.cuda.is_available()
+    else mp.get_context("spawn")
+)
 LOG_INTERMEDIATE_RESULTS = True
 
 from utils.visualization_utils import VideoLogging
@@ -90,7 +94,9 @@ class MetricAggregator:
         return len(self.sample_metrics)
 
 
-def merge_current_metric_to_metric_aggregate_dict(metric_aggregate_dict, current_metric_value_dict):
+def merge_current_metric_to_metric_aggregate_dict(
+    metric_aggregate_dict, current_metric_value_dict
+):
     for k, v in current_metric_value_dict.items():
         if k not in metric_aggregate_dict:
             metric_aggregate_dict[k] = MetricAggregator()
@@ -115,7 +121,9 @@ def log_results(
         metric_values = result[0]["metrics"]
         tab_data = result[1]
         contributing_workers.add(result[0]["worker_id"])
-        merge_current_metric_to_metric_aggregate_dict(total_metric_aggregators_dict, metric_values)
+        merge_current_metric_to_metric_aggregate_dict(
+            total_metric_aggregators_dict, metric_values
+        )
 
         if tab_data is not None:
             if table is None:
@@ -133,7 +141,11 @@ def log_results(
         wandb.log({f"VideoTable/{task_type}": table})
 
     all_objects = set(
-        [o.split("/")[1] for o in total_metric_aggregators_dict.keys() if o.startswith("extra/")]
+        [
+            o.split("/")[1]
+            for o in total_metric_aggregators_dict.keys()
+            if o.startswith("extra/")
+        ]
     )
     all_metrics = set(
         [
@@ -169,7 +181,9 @@ def log_results(
         for k in total_metric_aggregators_dict.keys()
         if "extra/" not in k and "for_video_table" not in k
     ]
-    metric_values = [total_metric_aggregators_dict[k].aggregate() for k in metrics_to_log]
+    metric_values = [
+        total_metric_aggregators_dict[k].aggregate() for k in metrics_to_log
+    ]
     metrics_to_log += ["total_size"]
     metric_values += [total_metric_aggregators_dict[metrics_to_log[0]].size()]
     metrics_to_log += ["num_workers"]
@@ -259,7 +273,9 @@ class OnlineEvaluatorManager:
         self.num_ended_workers = 0
         self.num_tasks_in_queue = 0
 
-    def load_minival_eval_samples(self, list_of_tasks) -> Dict[str, List[NormalizedEvalSample]]:
+    def load_minival_eval_samples(
+        self, list_of_tasks
+    ) -> Dict[str, List[NormalizedEvalSample]]:
         all_task_samples = {}
         # Make a dictionary of tasks to list of samples
         for task in list_of_tasks:
@@ -304,13 +320,18 @@ class OnlineEvaluatorManager:
         elif local_path.endswith(".jsonl.gz"):
             data_files = [local_path]
         else:
-            raise ValueError(f"Path must be a directory or .jsonl.gz file: {local_path}")
+            raise ValueError(
+                f"Path must be a directory or .jsonl.gz file: {local_path}"
+            )
         from tqdm import tqdm
 
         split_task_list = []
         for data_file in data_files:
             with gzip.open(data_file, "rt") as f:
-                tasks = [line for line in tqdm(f, desc=f"Loading {os.path.basename(data_file)}")]
+                tasks = [
+                    line
+                    for line in tqdm(f, desc=f"Loading {os.path.basename(data_file)}")
+                ]
                 split_task_list.extend(tasks)
         print(f"  Total loaded {len(split_task_list)} task samples")
         data = {"val": LazyJsonDataset(data=split_task_list)}
@@ -337,13 +358,17 @@ class OnlineEvaluatorManager:
             sample_ids = sample_ids[: self.eval_set_size]
 
         normalized_samples = [
-            eval_sample_to_normalized_eval_sample(task_type=task_type, sample=samples[i], index=i)
+            eval_sample_to_normalized_eval_sample(
+                task_type=task_type, sample=samples[i], index=i
+            )
             for i in range(len(samples))
         ]
 
         return [normalized_samples[i] for i in sample_ids]
 
-    def load_full_eval_samples(self, task_type: str) -> Dict[str, List[NormalizedEvalSample]]:
+    def load_full_eval_samples(
+        self, task_type: str
+    ) -> Dict[str, List[NormalizedEvalSample]]:
         data_dir = os.path.join(self.dataset_path, self.dataset_type)
         with open("test.txt", "w") as f:
             f.write(f"Loading full eval samples from: {data_dir}")
@@ -388,9 +413,16 @@ class OnlineEvaluatorManager:
     def log_data_stat(self, task_type, samples):
         distribution_dict = {}
         for sample in samples:
-            task_info = json_templated_spec_to_dict(sample["observations"]["templated_task_type"])
+            task_info = json_templated_spec_to_dict(
+                sample["observations"]["templated_task_type"]
+            )
 
-            for key in ["synsets", "room_types", "reference_synsets", "broad_synset_to_object_ids"]:
+            for key in [
+                "synsets",
+                "room_types",
+                "reference_synsets",
+                "broad_synset_to_object_ids",
+            ]:
                 if key in task_info:
                     distribution_dict.setdefault(key, {})
                     values = task_info[key]
@@ -411,7 +443,9 @@ class OnlineEvaluatorManager:
                     if isinstance(value, list):
                         value = str(tuple(value))
 
-                    distribution_dict[key][value] = distribution_dict[key].get(value, 0) + 1
+                    distribution_dict[key][value] = (
+                        distribution_dict[key].get(value, 0) + 1
+                    )
 
         if distribution_dict == {}:
             if task_type not in ["RoomVisit"]:
@@ -433,7 +467,9 @@ class OnlineEvaluatorManager:
         print(f"Loading objaverse houses from: {OBJAVERSE_HOUSES_DIR}")
 
         split_to_path = {
-            subset_to_load: os.path.join(OBJAVERSE_HOUSES_DIR, f"{subset_to_load}.jsonl.gz")
+            subset_to_load: os.path.join(
+                OBJAVERSE_HOUSES_DIR, f"{subset_to_load}.jsonl.gz"
+            )
         }
 
         houses_data = load_dataset_from_path(
@@ -445,9 +481,12 @@ class OnlineEvaluatorManager:
     def log_benchmark_stat(self):
         for task_type, samples in self.eval_samples.items():
             assert (
-                map_hard_easy_objectnavtype_to_objectnavtype(task_type) in REGISTERED_TASKS
+                map_hard_easy_objectnavtype_to_objectnavtype(task_type)
+                in REGISTERED_TASKS
             ), f"Task type {task_type} not registered"
-            self.log_data_stat(task_type=task_type, samples=self.eval_samples[task_type])
+            self.log_data_stat(
+                task_type=task_type, samples=self.eval_samples[task_type]
+            )
 
     def evaluate(self, agent_class, agent_input):
         self.workers = {}
@@ -589,7 +628,9 @@ class OnlineEvaluatorManager:
             if platform.system() != "Darwin":
                 time.sleep(30)  # Wait 30 seconds before moving on to the next one
 
-            new_found_results = self.accumulate_results(results_queue, task_type_to_results_list)
+            new_found_results = self.accumulate_results(
+                results_queue, task_type_to_results_list
+            )
 
             current_time = time.time()
             total_finished += new_found_results
@@ -598,7 +639,9 @@ class OnlineEvaluatorManager:
                 start_time = current_time
                 uncounted_finished = new_found_results
             else:
-                speed = (total_finished - uncounted_finished) / (current_time - start_time)
+                speed = (total_finished - uncounted_finished) / (
+                    current_time - start_time
+                )
                 ETA = (total_tasks - total_finished) / (speed + 1e-8)
                 print(f"Rate {speed:.3f} tasks/s, ETA {ETA / 3600:.3f}hours")
 
@@ -626,13 +669,19 @@ class OnlineEvaluatorManager:
             if num_alive == 0 or self.num_ended_workers == len(procs):
                 print(f"No process alive. Terminating")
                 break
-            elif num_alive == 1 and len(dead_proc_inds) == 0 and results_queue.qsize() == 0:
+            elif (
+                num_alive == 1
+                and len(dead_proc_inds) == 0
+                and results_queue.qsize() == 0
+            ):
                 print(f"1 process alive but no results in queue. Terminating")
                 break
             else:
                 print(f"{num_alive} alive eval workers")
 
-            if (new_found_results > 0 or len(dead_proc_inds) > 0) and LOG_INTERMEDIATE_RESULTS:
+            if (
+                new_found_results > 0 or len(dead_proc_inds) > 0
+            ) and LOG_INTERMEDIATE_RESULTS:
                 self.log_from_task_type_lists(
                     task_type_to_results_list,
                     upload=True,
@@ -690,9 +739,13 @@ class OnlineEvaluatorManager:
                 wandb=self.wandb,
                 all_workers_results=task_type_results,
                 task_type=task_type,
-                upload_per_task=upload_per_task if upload_per_task is not None else upload,
+                upload_per_task=(
+                    upload_per_task if upload_per_task is not None else upload
+                ),
                 upload_video=upload_video if upload_video is not None else upload,
-                upload_per_synset=upload_per_synset if upload_per_synset is not None else upload,
+                upload_per_synset=(
+                    upload_per_synset if upload_per_synset is not None else upload
+                ),
             )
 
         self.log_aggregated_results(all_tasks_aggregated_results, upload=upload)
@@ -704,7 +757,9 @@ class OnlineEvaluatorManager:
             list(all_tasks_aggregated_results.keys())[0]
         ]
         metrics_to_log = [
-            m for m in metrics_to_log if "extra/" not in m and "for_video_table/" not in m
+            m
+            for m in metrics_to_log
+            if "extra/" not in m and "for_video_table/" not in m
         ]
         columns = ["task_type"] + ["extra_tag"] + metrics_to_log
         aggrgeated_result_metrics_table = self.wandb.Table(columns=columns)
@@ -712,7 +767,9 @@ class OnlineEvaluatorManager:
         for task_type, results in all_tasks_aggregated_results.items():
             total_results += len(results)
             metrics_to_log, metric_values = results
-            metric_dict = {metrics_to_log[i]: metric_values[i] for i in range(len(metrics_to_log))}
+            metric_dict = {
+                metrics_to_log[i]: metric_values[i] for i in range(len(metrics_to_log))
+            }
             this_row = []
             for col in columns:
                 if col == "task_type":

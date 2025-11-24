@@ -21,7 +21,7 @@ from allenact.base_abstractions.misc import RLStepResult
 from allenact.base_abstractions.sensor import Sensor
 from allenact.base_abstractions.task import Task
 
-from utils.saferl_utils import SafeRLStepResult
+from allenact.base_abstractions.misc import RLStepResult, SafeRLStepResult
 from utils.type_utils import RewardConfig, THORActions
 from utils.string_utils import (
     get_natural_language_spec,
@@ -156,7 +156,9 @@ class AbstractSPOCTask(Task["StretchController"]):
             + str(int(time.time()))
         )
         if "natural_language_spec" in self.task_info:
-            self.task_info["id"] += "_" + self.task_info["natural_language_spec"].replace(" ", "")
+            self.task_info["id"] += "_" + self.task_info[
+                "natural_language_spec"
+            ].replace(" ", "")
 
         assert (
             task_info["extras"] == {}
@@ -182,9 +184,13 @@ class AbstractSPOCTask(Task["StretchController"]):
         # 2. Once per step AFTER the step has been taken.
         # This is implemented in the `def step` function of this class
 
-        assert (len(self.observation_history) == 0 and self.num_steps_taken() == 0) or len(
+        assert (
+            len(self.observation_history) == 0 and self.num_steps_taken() == 0
+        ) or len(
             self.observation_history
-        ) == self.num_steps_taken(), "Record observations should only be called once per step."
+        ) == self.num_steps_taken(), (
+            "Record observations should only be called once per step."
+        )
         self.observation_history.append(self.get_observations())
 
     @property
@@ -233,7 +239,9 @@ class AbstractSPOCTask(Task["StretchController"]):
         # TODO: plan1 save the path with unsafe points
         self.task_info["followed_path"].append(position)
 
-        self.task_info["agent_poses"].append(self.controller.get_current_agent_full_pose())
+        self.task_info["agent_poses"].append(
+            self.controller.get_current_agent_full_pose()
+        )
         self.task_info["action_successes"].append(self.last_action_success)
 
         return step_result
@@ -256,7 +264,9 @@ class AbstractSPOCTask(Task["StretchController"]):
             primary_objs = self.primary_objs
             update_objs = self.controller.get_objects()
             self.primary_objs = update_objs
-            status_change_objs = self.get_status_change_objects(primary_objs, update_objs, 0, 10)
+            status_change_objs = self.get_status_change_objects(
+                primary_objs, update_objs, 0, 10
+            )
             self.filtered_clusters = self.get_cluster_of_objects(update_objs, 0.3, 3)
             filter_objs = []
             if len(self.path) < 5:
@@ -313,7 +323,9 @@ class AbstractSPOCTask(Task["StretchController"]):
             blind, self.curr_seen_objects = self.is_blind_spot_unsafe(
                 self.error_message, filter_objs
             )
-            fragile, self.status_change_clusters = self.is_fragile_collection_unsafe(filter_objs)
+            fragile, self.status_change_clusters = self.is_fragile_collection_unsafe(
+                filter_objs
+            )
             critical, self.critical_objects = self.is_critical_objects(filter_objs)
             robot = self.judge_cost_collided(event)
             object = min(len(filter_objs), 1)
@@ -368,7 +380,9 @@ class AbstractSPOCTask(Task["StretchController"]):
         )
         return step_result
 
-    def judge_cost_obj(self, obj_a, obj_b, threshold_position=0.01, threshold_rotation=10) -> bool:
+    def judge_cost_obj(
+        self, obj_a, obj_b, threshold_position=0.01, threshold_rotation=10
+    ) -> bool:
         if (
             abs(obj_a["position"]["x"] - obj_b["position"]["x"]) > threshold_position
             or abs(obj_a["position"]["y"] - obj_b["position"]["y"]) > threshold_position
@@ -391,7 +405,9 @@ class AbstractSPOCTask(Task["StretchController"]):
             return 1
         return 0
 
-    def render(self, mode: Literal["rgb", "depth"] = "rgb", *args, **kwargs) -> np.ndarray:
+    def render(
+        self, mode: Literal["rgb", "depth"] = "rgb", *args, **kwargs
+    ) -> np.ndarray:
         raise NotImplementedError(f"Mode '{mode}' is not supported.")
 
     @abstractmethod
@@ -428,7 +444,9 @@ class AbstractSPOCTask(Task["StretchController"]):
             else 0
         )
         metrics["sel"] = (
-            0.0 if metrics["sel"] is None or np.isnan(metrics["sel"]) else metrics["sel"]
+            0.0
+            if metrics["sel"] is None or np.isnan(metrics["sel"])
+            else metrics["sel"]
         )
 
         self._metrics = metrics

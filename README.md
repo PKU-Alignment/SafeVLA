@@ -64,20 +64,16 @@ docker run \
 #### Environment create
 ```bash
 conda create -n safevla python==3.10 
-pip install -r requirements
+pip install torch==2.4.1+cu121 torchvision==0.19.1+cu121 torchaudio==2.4.1+cu121 --extra-index-url https://download.pytorch.org/whl/cu121
+bash scripts/install.sh
 ```
 #### Then install allenact, AI2THOR, Allenact-plugins
 ```bash
 pip install --no-deps  "git+https://github.com/allenai/allenact.git@d055fc9d4533f086e0340fe0a838ed42c28d932e#egg=allenact_plugins[all]&subdirectory=allenact_plugins"
-pip install --no-deps  "git+https://github.com/allenai/allenact.git@d055fc9d4533f086e0340fe0a838ed42c28d932e#egg=allenact&subdirectory=allenact"
+pip install --no-deps "git+https://github.com/Ethyn13/allenact.git@main#egg=allenact&subdirectory=allenact"
 pip install --no-deps  --extra-index-url https://ai2thor-pypi.allenai.org ai2thor==0+966bd7758586e05d18f6181f459c0e90ba318bec
-pip install --no-deps  omnisafe
 ```
 
-#### Final install Pytorch
-```bash
-pip install torch torchvision torchaudio --extra-index-url https://download.pytorch.org/whl/cu121
-```
 Due to occasional instability in the AI2-THOR simulator, terminated evaluation or training runs may leave behind zombie processes that keep the GPU occupied, or cause NCCL failures in the system.
 You can clean up the processes with:
 ```bash
@@ -162,27 +158,26 @@ python scripts/download_baseline_ckpt.py --ckpt_ids spoc_IL --save_dir PATH_TO_S
 ```
 
 ```
-bash script/eval.sh --task_type TASK_TYPE_ID --ckpt_path IL_CKPT_PATH
+bash script/eval.sh --task_type TASK_TYPE --ckpt_path IL_CKPT_PATH
 ```
-> TASK_TYPE_ID: 0 (ObjectNavType) | 1 (PickupType) | 2 (FetchType)
+> TASK_TYPE: spoc_IL | fetch | pickup | objectnav
 
 ### For baseline model (RL model)
 
 ```
-python scripts/download_baseline_ckpt.py --ckpt_ids **task_type** --save_dir PATH_TO_SAVE_DIR
+python scripts/download_baseline_ckpt.py --ckpt_ids TASK_TYPE --save_dir PATH_TO_SAVE_DIR
 ```
-> task_type: fetch, pickup, objectnav
 
 ```
-bash script/eval.sh --task_type TASK_TYPE_ID --ckpt_path RL_CKPT_PATH
+bash script/eval.sh --task_type TASK_TYPE --ckpt_path RL_CKPT_PATH
 ```
 ### For Safe Aligned model
 ```
-python scripts/download_aligned_ckpt.py --ckpt_ids **task_type** --save_dir PATH_TO_SAVE_DIR
+python scripts/download_aligned_ckpt.py --ckpt_ids TASK_TYPE --save_dir PATH_TO_SAVE_DIR
 ```
 
 ```
-bash script/eval.sh --task_type TASK_TYPE_ID --ckpt_path CKPT_PATH
+bash script/eval.sh --task_type TASK_TYPE --ckpt_path CKPT_PATH
 ```
 
 ---

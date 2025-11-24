@@ -151,8 +151,12 @@ class DinoLLAMATxNavActorCritic(VisualNavActorCritic):
             self.critic = MLPCriticHead(self._hidden_size)
         elif critic_type == "discrete":
             # seems that bins = 101 is a good choice -> -5 to 15 = 20 / 100 = 0.2 width -> sigma=0.15
-            dc_loss = HLGaussLoss(min_value=-5.0, max_value=15.0, num_bins=101, sigma=0.15)
-            self.critic = DiscreteCriticHead(self._hidden_size, bin_size=101, loss_fn=dc_loss)
+            dc_loss = HLGaussLoss(
+                min_value=-5.0, max_value=15.0, num_bins=101, sigma=0.15
+            )
+            self.critic = DiscreteCriticHead(
+                self._hidden_size, bin_size=101, loss_fn=dc_loss
+            )
         else:
             print(f"Unknown critic type: {critic_type}")
             raise NotImplementedError
@@ -182,7 +186,9 @@ class DinoLLAMATxNavActorCritic(VisualNavActorCritic):
             state_dict = ckpt["model_state_dict"]
             state_dict = {k: v for k, v in state_dict.items() if "critic_tsfm" not in k}
             load_status = self.load_state_dict(state_dict)
-            print(f"Loaded model from {prev_rl_checkpoint} with status: {str(load_status)}")
+            print(
+                f"Loaded model from {prev_rl_checkpoint} with status: {str(load_status)}"
+            )
 
         self.train()
 
@@ -228,12 +234,16 @@ class DinoLLAMATxNavActorCritic(VisualNavActorCritic):
         state_encoders = OrderedDict()  # perserve insertion order in py3.6
         if self.multiple_beliefs:  # multiple belief model
             for aux_uuid in self.auxiliary_uuids:
-                state_encoders_linear[aux_uuid] = nn.Linear(tx_input_size, self._hidden_size)
+                state_encoders_linear[aux_uuid] = nn.Linear(
+                    tx_input_size, self._hidden_size
+                )
                 state_encoders_time[aux_uuid] = PositionalEncoder(
                     self._hidden_size, max_len=self.max_steps
                 )
 
-                state_encoders[aux_uuid] = LLAMATransformerDecoder(state_encoders_params)
+                state_encoders[aux_uuid] = LLAMATransformerDecoder(
+                    state_encoders_params
+                )
             # create fusion model
             self.fusion_model = self.beliefs_fusion(
                 hidden_size=self._hidden_size,
@@ -251,13 +261,17 @@ class DinoLLAMATxNavActorCritic(VisualNavActorCritic):
         else:  # single belief model
             if self.use_linear_belief_adaptor:
                 self.state_encoders_linear = nn.Linear(tx_input_size, self._hidden_size)
-            self.time_encoder = PositionalEncoder(self._hidden_size, max_len=self.max_steps)
+            self.time_encoder = PositionalEncoder(
+                self._hidden_size, max_len=self.max_steps
+            )
 
             self.decoder = LLAMATransformerDecoder(state_encoders_params)
             self.belief_names = ["single_belief"]
 
         get_logger().info(
-            "there are {} belief models: {}".format(len(self.belief_names), self.belief_names)
+            "there are {} belief models: {}".format(
+                len(self.belief_names), self.belief_names
+            )
         )
 
     def _recurrent_memory_specification(self):
@@ -302,9 +316,7 @@ class DinoLLAMATxNavActorCritic(VisualNavActorCritic):
         ckpt_dir = os.path.join(exp_base_dir, "ckpts")
         os.makedirs(ckpt_dir, exist_ok=True)
 
-        ckpt_fn = (
-            f"{wandb_entity_name}/{wandb_project_name}/ckpt-{training_run_id}-{ckptStep}:latest"
-        )
+        ckpt_fn = f"{wandb_entity_name}/{wandb_project_name}/ckpt-{training_run_id}-{ckptStep}:latest"
         artifact = api.artifact(ckpt_fn)
         artifact.download(ckpt_dir)
         ckpt_pth = os.path.join(ckpt_dir, "model.ckpt")
@@ -367,7 +379,9 @@ class DinoLLAMATxNavActorCritic(VisualNavActorCritic):
 
         if self.use_linear_belief_adaptor:
             joint_embeds = self.state_encoders_linear(joint_embeds)
-        joint_embeds = self.time_encoder(observations[self.time_step_uuid]) + joint_embeds
+        joint_embeds = (
+            self.time_encoder(observations[self.time_step_uuid]) + joint_embeds
+        )
         x = joint_embeds.permute(1, 0, 2)
         if self.traj_idx_uuid is None:
             mask = None
@@ -376,7 +390,9 @@ class DinoLLAMATxNavActorCritic(VisualNavActorCritic):
             epi_start = torch.clamp(self.time_step_counter - timesteps, min=0).expand(
                 -1, self.time_step_counter + 1
             )  # bs, 1
-            step_range = torch.arange(0, self.time_step_counter + 1).to(device=epi_start.device)
+            step_range = torch.arange(0, self.time_step_counter + 1).to(
+                device=epi_start.device
+            )
 
             mask = (epi_start <= step_range).unsqueeze(1).unsqueeze(1)
         else:
@@ -398,7 +414,9 @@ class DinoLLAMATxNavActorCritic(VisualNavActorCritic):
                     "beliefs": beliefs,  # (beliefs_dict[aux_uuid] if self.multiple_beliefs else beliefs),
                     "obs_embeds": obs_embeds,
                     "aux_model": (
-                        self.aux_models[aux_uuid] if aux_uuid in self.aux_models else None
+                        self.aux_models[aux_uuid]
+                        if aux_uuid in self.aux_models
+                        else None
                     ),
                 }
                 for aux_uuid in self.auxiliary_uuids
@@ -444,7 +462,9 @@ class DinoLLAMATxNavActorCritic(VisualNavActorCritic):
                 extras["bias_norm"] = torch.Tensor([bias_norm])
 
                 if self.critic.fc[-1].weight.grad is not None:
-                    weight_grad_norm = self.critic.fc[-1].weight.grad.detach().data.norm(2)
+                    weight_grad_norm = (
+                        self.critic.fc[-1].weight.grad.detach().data.norm(2)
+                    )
                     extras["weight_grad_norm"] = torch.Tensor([weight_grad_norm])
 
         actor_critic_output = ActorCriticOutput(
@@ -487,7 +507,9 @@ class DinoTxGoalEncoder(nn.Module):
             self.text_encoder = T5EncoderModel.from_pretrained(text_pt_model)
             self.text_tokenizer = AutoTokenizer.from_pretrained(text_pt_model)
             self.text_adapter = nn.Sequential(
-                nn.Linear(512, self.goal_embed_dims), nn.LayerNorm(self.goal_embed_dims), nn.ReLU()
+                nn.Linear(512, self.goal_embed_dims),
+                nn.LayerNorm(self.goal_embed_dims),
+                nn.ReLU(),
             )
 
         self.fusion_token = nn.Parameter(0.1 * torch.rand(self.goal_embed_dims))
@@ -529,7 +551,10 @@ class DinoTxGoalEncoder(nn.Module):
                 num_layers=combiner_layers,
             )
 
-        if relevant_object_box_uuid is not None and accurate_object_box_uuid is not None:
+        if (
+            relevant_object_box_uuid is not None
+            and accurate_object_box_uuid is not None
+        ):
             num_boxes = 2
             num_cameras = 1
             self.len_bounding_boxes = num_boxes * 5 * num_cameras
@@ -539,7 +564,9 @@ class DinoTxGoalEncoder(nn.Module):
                 nn.LayerNorm(self.combine_hid_out_dims),
                 nn.ReLU(),
             )
-            self.coord_pos_enc = nn.Embedding(self.len_bounding_boxes, self.combine_hid_out_dims)
+            self.coord_pos_enc = nn.Embedding(
+                self.len_bounding_boxes, self.combine_hid_out_dims
+            )
 
     @property
     def is_blind(self):
@@ -580,7 +607,9 @@ class DinoTxGoalEncoder(nn.Module):
     def encode_bbox(self, observations):
         task_relevant_object_bbox = observations[self.relevant_object_box_uuid]
         nav_accurate_object_bbox = observations[self.accurate_object_box_uuid]
-        best_nav_boxes = get_best_of_two_bboxes(task_relevant_object_bbox, nav_accurate_object_bbox)
+        best_nav_boxes = get_best_of_two_bboxes(
+            task_relevant_object_bbox, nav_accurate_object_bbox
+        )
         B, T, N = best_nav_boxes.shape
         combined_boxes = best_nav_boxes.reshape(B * T, N)
         pos_encoded_boxes = self.bbox_pos_encoder(combined_boxes)
@@ -624,7 +653,9 @@ class DinoTxGoalEncoder(nn.Module):
         return x.view(nstep, nsampler * nagent, -1)
 
     def forward(self, observations):
-        observations, use_agent, nstep, nsampler, nagent = self.adapt_input(observations)
+        observations, use_agent, nstep, nsampler, nagent = self.adapt_input(
+            observations
+        )
 
         if self.blind:
             return self.embed_goal(observations[self.goal_uuid])
@@ -634,7 +665,9 @@ class DinoTxGoalEncoder(nn.Module):
             .flatten(start_dim=2)
             .permute(0, 2, 1)
         )
-        corresponding_camera_token = getattr(self, "visual_sensor_token_raw_navigation_camera")
+        corresponding_camera_token = getattr(
+            self, "visual_sensor_token_raw_navigation_camera"
+        )
 
         concatenated_feats = [
             self.fusion_token.view(1, 1, -1).expand(nstep * nsampler, -1, -1),
@@ -647,15 +680,22 @@ class DinoTxGoalEncoder(nn.Module):
                 .flatten(start_dim=2)
                 .permute(0, 2, 1)
             )
-            corresponding_manip_token = getattr(self, "visual_sensor_token_raw_manipulation_camera")
-            concatenated_feats.append(self.visual_adapter(manip_fit) + corresponding_manip_token)
+            corresponding_manip_token = getattr(
+                self, "visual_sensor_token_raw_manipulation_camera"
+            )
+            concatenated_feats.append(
+                self.visual_adapter(manip_fit) + corresponding_manip_token
+            )
 
         if self.goal_uuid is not None:
             text_feats = self.distribute_target(observations)
             concatenated_feats.append(text_feats)
         else:
             raise NotImplementedError("We currently requires goal sensor to be present")
-        if self.relevant_object_box_uuid is not None and self.accurate_object_box_uuid is not None:
+        if (
+            self.relevant_object_box_uuid is not None
+            and self.accurate_object_box_uuid is not None
+        ):
             raise NotImplementedError("We currently do not support Bbox observations")
             pos_encoded_boxes = self.encode_bbox(observations)
             concatenated_feats.append(pos_encoded_boxes)
@@ -670,7 +710,9 @@ class DinoTxGoalEncoder(nn.Module):
         if self.goal_uuid is None:
             return self.adapt_output(x, use_agent, nstep, nsampler, nagent), None
         else:
-            return self.adapt_output(x, use_agent, nstep, nsampler, nagent), self.adapt_output(
+            return self.adapt_output(
+                x, use_agent, nstep, nsampler, nagent
+            ), self.adapt_output(
                 text_feats.mean(dim=1), use_agent, nstep, nsampler, nagent
             )
 
@@ -718,5 +760,7 @@ class DiscreteCriticHead(nn.Module):
 
     def forward(self, x):
         logits = self.fc(x)
-        value = self.loss_fn.transform_from_probs(F.softmax(logits, dim=-1)).view(*x.shape[:2], -1)
+        value = self.loss_fn.transform_from_probs(F.softmax(logits, dim=-1)).view(
+            *x.shape[:2], -1
+        )
         return value, logits

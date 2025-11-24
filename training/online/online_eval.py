@@ -6,7 +6,9 @@ import os
 import wandb
 import torch
 
-from architecture.models.allenact_transformer_models.inference_agent import InferenceAgentVIDA
+from architecture.models.allenact_transformer_models.inference_agent import (
+    InferenceAgentVIDA,
+)
 
 from training.online.dinov2_vits_tsfm_base import (
     DinoV2ViTSTSFMBase,
@@ -36,7 +38,9 @@ model_config_params = {
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Online evaluation")
-    parser.add_argument("--model_config", default="InferenceDINOv2ViTSLLAMATxTxBaseDist", type=str)
+    parser.add_argument(
+        "--model_config", default="InferenceDINOv2ViTSLLAMATxTxBaseDist", type=str
+    )
     parser.add_argument("--training_tag", type=str)
     parser.add_argument("--wandb_project_name", type=str, default="")
     parser.add_argument("--wandb_entity_name", type=str, default="")
@@ -47,13 +51,17 @@ def parse_args():
     parser.add_argument("--greedy", action="store_true", default=False)
     parser.add_argument("--shuffle", action="store_true", default=False)
     parser.add_argument("--test_augmentation", action="store_true", default=False)
-    parser.add_argument("--eval_subset", default="minival", help="options: val, minival, train")
+    parser.add_argument(
+        "--eval_subset", default="minival", help="options: val, minival, train"
+    )
     parser.add_argument("--dataset_type", default="object_nav_v0.3")
     parser.add_argument("--task_type", default="ObjectNavType")
     parser.add_argument("--img_encoder_type", default="DinoV2")
     parser.add_argument("--dataset_path", default="/data/datasets")
     parser.add_argument("--output_basedir", default="/data/results/online_evaluation")
-    parser.add_argument("--house_set", default="objaverse", help="procthor or objaverse")
+    parser.add_argument(
+        "--house_set", default="objaverse", help="procthor or objaverse"
+    )
     parser.add_argument("--num_workers", type=int, required=True)
     parser.add_argument("--extra_tag", default="")
     parser.add_argument("--benchmark_revision", default="chores-small")
@@ -95,7 +103,9 @@ def get_eval_run_name(args):
 def main(args):
     eval_run_name = get_eval_run_name(args)
     exp_base_dir = os.path.join(args.output_basedir, eval_run_name)
-    exp_dir = os.path.join(exp_base_dir, datetime.datetime.now().strftime("%m_%d_%Y_%H_%M_%S_%f"))
+    exp_dir = os.path.join(
+        exp_base_dir, datetime.datetime.now().strftime("%m_%d_%Y_%H_%M_%S_%f")
+    )
     os.makedirs(exp_dir, exist_ok=True)
 
     run = wandb.init(

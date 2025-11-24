@@ -179,7 +179,9 @@ class ObjectNavTask(AbstractSPOCTask):
             travelled_distance=self.travelled_distance,
         )
         metrics["spl"] = (
-            0.0 if metrics["spl"] is None or np.isnan(metrics["spl"]) else metrics["spl"]
+            0.0
+            if metrics["spl"] is None or np.isnan(metrics["spl"])
+            else metrics["spl"]
         )
         metrics["success"] = self._success
         if self.reward_shaper is not None:

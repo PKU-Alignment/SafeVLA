@@ -67,5 +67,7 @@ class TargetObjectWasPickedUp(Sensor):
             for object_type in object_types:
                 object_ids += task.task_info["synset_to_object_ids"][object_type]
             objects_in_hand = env.get_held_objects()
-            target_obj_in_hand = len([x for x in objects_in_hand if x in object_ids]) > 0
+            target_obj_in_hand = (
+                len([x for x in objects_in_hand if x in object_ids]) > 0
+            )
         return np.array([target_obj_in_hand], dtype=np.int64)

@@ -26,7 +26,7 @@ from utils.transformation_util import (
     get_full_transformation_list,
     sample_a_specific_transform,
 )
-from utils.saferl_utils import InferenceAgent
+from allenact.utils.inference import InferenceAgent
 
 
 def tensor_image_preprocessor(
@@ -53,7 +53,9 @@ def tensor_image_preprocessor(
         ]
 
     if data_augmentation:
-        data_aug_transforms = get_full_transformation_list(size=size, version=augmentation_version)
+        data_aug_transforms = get_full_transformation_list(
+            size=size, version=augmentation_version
+        )
         if specific:
             data_aug_transforms = sample_a_specific_transform(
                 Compose(data_aug_transforms)
@@ -141,7 +143,9 @@ class InferenceAgentVIDA(InferenceAgent):
             state_dict_to_load = ckpt["model_state_dict"]
 
         elif any(
-            k.startswith("visual_encoder.") or k.startswith("actor.") or k.startswith("decoder.")
+            k.startswith("visual_encoder.")
+            or k.startswith("actor.")
+            or k.startswith("decoder.")
             for k in ckpt.keys()
         ):
             state_dict_to_load = ckpt
@@ -217,7 +221,9 @@ class InferenceAgentVIDA(InferenceAgent):
         if "nav_accurate_object_bbox" in frame.keys():
             observations["nav_accurate_object_bbox"] = frame["nav_accurate_object_bbox"]
         if "nav_task_relevant_object_bbox" in frame.keys():
-            observations["nav_task_relevant_object_bbox"] = frame["nav_task_relevant_object_bbox"]
+            observations["nav_task_relevant_object_bbox"] = frame[
+                "nav_task_relevant_object_bbox"
+            ]
         return self.act(observations, goal_spec)
 
     def act(self, observations: ObservationType, goal_spec):

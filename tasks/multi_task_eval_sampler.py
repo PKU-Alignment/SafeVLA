@@ -16,7 +16,12 @@ from tasks.task_specs import (
     TaskSpecSamplerDatasetWrapper,
 )
 from utils.constants.stretch_initialization_utils import HORIZON
-from utils.type_utils import Vector3, AgentPose, AbstractTaskArgs, REGISTERED_TASK_PARAMS
+from utils.type_utils import (
+    Vector3,
+    AgentPose,
+    AbstractTaskArgs,
+    REGISTERED_TASK_PARAMS,
+)
 
 
 class MultiTaskSampler(AbstractSPOCTaskSampler):
@@ -50,7 +55,9 @@ class MultiTaskSampler(AbstractSPOCTaskSampler):
         assert self.mode in ["train", "val", "test"]
 
         if isinstance(task_spec_sampler, TaskSpecDataset):
-            task_spec_sampler = TaskSpecSamplerDatasetWrapper(task_spec_dataset=task_spec_sampler)
+            task_spec_sampler = TaskSpecSamplerDatasetWrapper(
+                task_spec_dataset=task_spec_sampler
+            )
 
         self.task_spec_sampler = task_spec_sampler
 
@@ -84,7 +91,8 @@ class MultiTaskSampler(AbstractSPOCTaskSampler):
         task_spec: TaskSpec, house_index: int, house: Dict[str, Any]
     ) -> Dict[str, Any]:
         agent_starting_position = {
-            key: value for key, value in zip(["x", "y", "z"], task_spec["agent_starting_position"])
+            key: value
+            for key, value in zip(["x", "y", "z"], task_spec["agent_starting_position"])
         }
 
         task_info = {
@@ -196,9 +204,15 @@ class MultiTaskSampler(AbstractSPOCTaskSampler):
                 **starting_pose,
             )
         except TimeoutError:
-            self.allocate_a_new_stretch_controller(use_original_ai2thor_controller=False)
-            self.reset_controller_in_current_house_and_cache_house_data(skip_controller_reset=False)
-            return self.next_task(force_advance_scene=force_advance_scene, house_index=house_index)
+            self.allocate_a_new_stretch_controller(
+                use_original_ai2thor_controller=False
+            )
+            self.reset_controller_in_current_house_and_cache_house_data(
+                skip_controller_reset=False
+            )
+            return self.next_task(
+                force_advance_scene=force_advance_scene, house_index=house_index
+            )
         if not event:
             if self.mode == "train":
                 self.controller.reset(self.current_house, seed=None)

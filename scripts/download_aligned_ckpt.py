@@ -2,43 +2,72 @@ import argparse
 import os
 from multiprocessing import Pool
 
-from objathor.utils.download_utils import download_with_progress_bar
+from huggingface_hub import hf_hub_download
 
 
 def download_ckpt(info):
-    url = info["url"]
+    repo_id = info["repo_id"]
+    filename = info["filename"]
     save_dir = info["save_dir"]
-    id = "safevla_" + info["url"][-2:]
+
     os.makedirs(save_dir, exist_ok=True)
 
-    ckpt_path = os.path.join(save_dir, id)
-    download_with_progress_bar(
-        url=url,
-        save_path=ckpt_path,
-        desc=f"Downloading: {url}",
+    print(f"Downloading {filename} to {save_dir}...")
+    downloaded_path = hf_hub_download(
+        repo_id=repo_id,
+        filename=filename,
+        cache_dir=save_dir,
+        local_dir=save_dir,
+        local_dir_use_symlinks=False,
     )
+    print(f"Download completed: {downloaded_path}")
+    return downloaded_path
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Trained ckpt downloader.")
-    parser.add_argument("--save_dir", required=True, help="Directory to save the downloaded files.")
-    parser.add_argument("--num", "-n", default=1, type=int, help="Number of parallel downloads.")
+    parser = argparse.ArgumentParser(
+        description="Download trained model weights from Hugging Face."
+    )
+    parser.add_argument(
+        "--ckpt_ids",
+        required=True,
+        nargs="+",
+        choices=["objnav", "pickup", "fetch"],
+        help="The task type to download: objnav, pickup, fetch",
+    )
+    parser.add_argument(
+        "--save_dir",
+        required=True,
+        help="The directory path to save the downloaded files.",
+    )
+    parser.add_argument(
+        "--num", "-n", default=1, type=int, help="The number of parallel downloads."
+    )
     args = parser.parse_args()
 
     os.makedirs(args.save_dir, exist_ok=True)
 
+    repo_id = "SafetyEmbodiedAI/safety-model"
+
     download_args = []
-    for id in ["aa", "ab", "ac"]:
-        save_dir = os.path.join(args.save_dir)
+    for task_type in args.ckpt_ids:
+        filename = f"safe_{task_type}.pt"
         download_args.append(
             dict(
-                url=f"https://pub-ee94e729c6fe46f491f4f5312d417083.r2.dev/safevla_" + id,
-                save_dir=save_dir,
+                repo_id=repo_id,
+                filename=filename,
+                save_dir=args.save_dir,
             )
         )
 
-    with Pool(args.num) as pool:
-        pool.map(download_ckpt, download_args)
+    if args.num > 1 and len(download_args) > 1:
+        with Pool(min(args.num, len(download_args))) as pool:
+            pool.map(download_ckpt, download_args)
+    else:
+        for info in download_args:
+            download_ckpt(info)
+
+    print(f"\nAll files have been successfully downloaded to: {args.save_dir}")
 
 
 if __name__ == "__main__":

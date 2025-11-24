@@ -176,7 +176,9 @@ class TaskNaturalLanguageSpecSensor(Sensor):
         self, env: EnvType, task: Optional[SubTaskType], *args: Any, **kwargs: Any
     ) -> np.ndarray:
         natural_language_spec = task.task_info["natural_language_spec"]
-        natural_language_spec = self.dynamic_change_instruction(task, natural_language_spec)
+        natural_language_spec = self.dynamic_change_instruction(
+            task, natural_language_spec
+        )
 
         return convert_string_to_byte(natural_language_spec, self.str_max_len)
 
@@ -286,10 +288,18 @@ class TaskRelevantObjectBBoxSensor(Sensor):
                 spaces={
                     "oids_as_bytes": gym.spaces.MultiDiscrete([256] * 10),
                     "synset_to_oids_as_bytes": gym.spaces.MultiDiscrete([256] * 10),
-                    "min_rows": gym.spaces.Box(low=-1, high=np.inf, shape=(10,), dtype=np.float32),
-                    "max_rows": gym.spaces.Box(low=-1, high=np.inf, shape=(10,), dtype=np.float32),
-                    "min_cols": gym.spaces.Box(low=-1, high=np.inf, shape=(10,), dtype=np.float32),
-                    "max_cols": gym.spaces.Box(low=-1, high=np.inf, shape=(10,), dtype=np.float32),
+                    "min_rows": gym.spaces.Box(
+                        low=-1, high=np.inf, shape=(10,), dtype=np.float32
+                    ),
+                    "max_rows": gym.spaces.Box(
+                        low=-1, high=np.inf, shape=(10,), dtype=np.float32
+                    ),
+                    "min_cols": gym.spaces.Box(
+                        low=-1, high=np.inf, shape=(10,), dtype=np.float32
+                    ),
+                    "max_cols": gym.spaces.Box(
+                        low=-1, high=np.inf, shape=(10,), dtype=np.float32
+                    ),
                 },
             )
         else:
@@ -297,10 +307,18 @@ class TaskRelevantObjectBBoxSensor(Sensor):
                 spaces={
                     "oids_as_bytes": gym.spaces.MultiDiscrete([256] * 10),
                     "synset_to_oids_as_bytes": gym.spaces.MultiDiscrete([256] * 10),
-                    "min_xs": gym.spaces.Box(low=-1, high=1, shape=(10,), dtype=np.float32),
-                    "max_xs": gym.spaces.Box(low=-1, high=1, shape=(10,), dtype=np.float32),
-                    "min_ys": gym.spaces.Box(low=-1, high=1, shape=(10,), dtype=np.float32),
-                    "max_ys": gym.spaces.Box(low=-1, high=1, shape=(10,), dtype=np.float32),
+                    "min_xs": gym.spaces.Box(
+                        low=-1, high=1, shape=(10,), dtype=np.float32
+                    ),
+                    "max_xs": gym.spaces.Box(
+                        low=-1, high=1, shape=(10,), dtype=np.float32
+                    ),
+                    "min_ys": gym.spaces.Box(
+                        low=-1, high=1, shape=(10,), dtype=np.float32
+                    ),
+                    "max_ys": gym.spaces.Box(
+                        low=-1, high=1, shape=(10,), dtype=np.float32
+                    ),
                 },
             )
 
@@ -329,13 +347,17 @@ class TaskRelevantObjectBBoxSensor(Sensor):
                 self.oids_as_bytes = task.oids_as_bytes
                 self.synset_to_oids_as_bytes = task.synset_to_oids_as_bytes
             else:
-                task_relevant_synsets = get_task_relevant_synsets(task_spec=task.task_info)
+                task_relevant_synsets = get_task_relevant_synsets(
+                    task_spec=task.task_info
+                )
                 all_objects = env.get_objects()
 
                 self.task_relevant_synset_to_objects = {}
                 for synset in task_relevant_synsets:
-                    self.task_relevant_synset_to_objects[synset] = env.get_all_objects_of_synset(
-                        synset=synset, include_hyponyms=True, all_objs=all_objects
+                    self.task_relevant_synset_to_objects[synset] = (
+                        env.get_all_objects_of_synset(
+                            synset=synset, include_hyponyms=True, all_objs=all_objects
+                        )
                     )
 
                 self.task_relevant_oids = list(
@@ -354,7 +376,9 @@ class TaskRelevantObjectBBoxSensor(Sensor):
                 }
 
                 self.oids_as_bytes = self.encode_json(self.task_relevant_oids)
-                self.synset_to_oids_as_bytes = self.encode_json(task_relevant_synset_to_oids)
+                self.synset_to_oids_as_bytes = self.encode_json(
+                    task_relevant_synset_to_oids
+                )
 
                 task.task_relevant_synset_to_oids = self.task_relevant_synset_to_objects
                 task.task_relevant_oids = self.task_relevant_oids
@@ -418,10 +442,18 @@ class TaskRelevantObjectBBoxSensor(Sensor):
         else:
             return {
                 "oids_as_bytes": self.oids_as_bytes,
-                "min_xs": np.array(min_xs, dtype=np.float32).astype(int).astype(np.float32),
-                "max_xs": np.array(max_xs, dtype=np.float32).astype(int).astype(np.float32),
-                "min_ys": np.array(min_ys, dtype=np.float32).astype(int).astype(np.float32),
-                "max_ys": np.array(max_ys, dtype=np.float32).astype(int).astype(np.float32),
+                "min_xs": np.array(min_xs, dtype=np.float32)
+                .astype(int)
+                .astype(np.float32),
+                "max_xs": np.array(max_xs, dtype=np.float32)
+                .astype(int)
+                .astype(np.float32),
+                "min_ys": np.array(min_ys, dtype=np.float32)
+                .astype(int)
+                .astype(np.float32),
+                "max_ys": np.array(max_ys, dtype=np.float32)
+                .astype(int)
+                .astype(np.float32),
             }
 
 
@@ -458,13 +490,17 @@ class SlowAccurateObjectBBoxSensor(TaskRelevantObjectBBoxSensor):
                 self.oids_as_bytes = task.oids_as_bytes
                 self.synset_to_oids_as_bytes = task.synset_to_oids_as_bytes
             else:
-                task_relevant_synsets = get_task_relevant_synsets(task_spec=task.task_info)
+                task_relevant_synsets = get_task_relevant_synsets(
+                    task_spec=task.task_info
+                )
                 all_objects = env.get_objects()
 
                 self.task_relevant_synset_to_objects = {}
                 for synset in task_relevant_synsets:
-                    self.task_relevant_synset_to_objects[synset] = env.get_all_objects_of_synset(
-                        synset=synset, include_hyponyms=True, all_objs=all_objects
+                    self.task_relevant_synset_to_objects[synset] = (
+                        env.get_all_objects_of_synset(
+                            synset=synset, include_hyponyms=True, all_objs=all_objects
+                        )
                     )
 
                 self.task_relevant_oids = list(
@@ -483,7 +519,9 @@ class SlowAccurateObjectBBoxSensor(TaskRelevantObjectBBoxSensor):
                 }
 
                 self.oids_as_bytes = self.encode_json(self.task_relevant_oids)
-                self.synset_to_oids_as_bytes = self.encode_json(task_relevant_synset_to_oids)
+                self.synset_to_oids_as_bytes = self.encode_json(
+                    task_relevant_synset_to_oids
+                )
 
                 task.task_relevant_synset_to_oids = self.task_relevant_synset_to_objects
                 task.task_relevant_oids = self.task_relevant_oids
@@ -536,7 +574,9 @@ class TaskRelevantObjectBBoxSensorOnlineEval(Sensor):
         observation_space = gym.spaces.Discrete(3)
         super().__init__(**prepare_locals_for_super(locals()))
         self.sensor_to_use = original_sensor_to_use(
-            convert_to_pixel_coords=convert_to_pixel_coords, which_camera=which_camera, uuid=uuid
+            convert_to_pixel_coords=convert_to_pixel_coords,
+            which_camera=which_camera,
+            uuid=uuid,
         )
 
         self.convert_to_pixel_coords = convert_to_pixel_coords
@@ -555,7 +595,9 @@ class TaskRelevantObjectBBoxSensorOnlineEval(Sensor):
         *args,
         **kwargs,
     ) -> np.ndarray:
-        observation_dict = self.sensor_to_use.get_observation(env, task, *args, **kwargs)
+        observation_dict = self.sensor_to_use.get_observation(
+            env, task, *args, **kwargs
+        )
 
         num_boxes = observation_dict["min_cols"].shape[0]
 
@@ -582,12 +624,16 @@ class TaskRelevantObjectBBoxSensorOnlineEval(Sensor):
                 #     ]
                 # ]
             else:
-                tgt_1_ids = [val for val in task_dict["broad_synset_to_object_ids"].values()]
+                tgt_1_ids = [
+                    val for val in task_dict["broad_synset_to_object_ids"].values()
+                ]
                 tgt_1_ids = sum(tgt_1_ids, [])
 
         def parse_biggest_bbox(object_indices):
             object_indices = sorted(object_indices)
-            if len(object_indices) == 0:  # both bbox_1 and bbox_2 need to have a default value
+            if (
+                len(object_indices) == 0
+            ):  # both bbox_1 and bbox_2 need to have a default value
                 return np.array(EMPTY_BBOX)
             x1 = observation_dict["min_cols"][object_indices]
             y1 = observation_dict["min_rows"][object_indices]
@@ -646,9 +692,13 @@ class BestBboxSensorOnlineEval(Sensor):
         bboxes = []
         for sensor in self.sensor_to_use:
             bboxes.append(
-                sensor.get_observation(env, task, *args, **kwargs)[np.newaxis, np.newaxis, :]
+                sensor.get_observation(env, task, *args, **kwargs)[
+                    np.newaxis, np.newaxis, :
+                ]
             )
-        assert len(self.sensor_to_use) == 2, "can easily be extended to more than 2 sensors"
+        assert (
+            len(self.sensor_to_use) == 2
+        ), "can easily be extended to more than 2 sensors"
         bbox_to_return = get_best_of_two_bboxes(bboxes[0], bboxes[1])[0][0]
         return bbox_to_return
 
@@ -830,11 +880,15 @@ class TaskRelevantObjectBBoxSensorDeticOnlineEvalDetic(TaskRelevantObjectBBoxSen
     ) -> None:
         self.gpu_device = gpu_device
         super().__init__(
-            which_camera=which_camera, convert_to_pixel_coords=convert_to_pixel_coords, uuid=uuid
+            which_camera=which_camera,
+            convert_to_pixel_coords=convert_to_pixel_coords,
+            uuid=uuid,
         )
 
         self.device = (
-            self.gpu_device if (torch.cuda.is_available() and self.gpu_device != -1) else "cpu"
+            self.gpu_device
+            if (torch.cuda.is_available() and self.gpu_device != -1)
+            else "cpu"
         )
         from utils.detic_utils import DeticPredictor
 
@@ -848,7 +902,9 @@ class TaskRelevantObjectBBoxSensorDeticOnlineEvalDetic(TaskRelevantObjectBBoxSen
         self.last_bbox = None
         self.last_rgb = None
 
-    def get_observation(self, env: StretchController, task: AbstractSPOCTask, *args, **kwargs):
+    def get_observation(
+        self, env: StretchController, task: AbstractSPOCTask, *args, **kwargs
+    ):
         if self.which_camera == "nav":
             rgb = env.navigation_camera
         elif self.which_camera == "manip":
@@ -915,10 +971,14 @@ class TaskRelevantObjectBBoxSensorDummy(TaskRelevantObjectBBoxSensor):
         gpu_device=-1,
     ) -> None:
         super().__init__(
-            which_camera=which_camera, convert_to_pixel_coords=convert_to_pixel_coords, uuid=uuid
+            which_camera=which_camera,
+            convert_to_pixel_coords=convert_to_pixel_coords,
+            uuid=uuid,
         )
 
-    def get_observation(self, env: StretchController, task: AbstractSPOCTask, *args, **kwargs):
+    def get_observation(
+        self, env: StretchController, task: AbstractSPOCTask, *args, **kwargs
+    ):
         return np.array(EMPTY_DOUBLE_BBOX).astype(np.float32)
 
 

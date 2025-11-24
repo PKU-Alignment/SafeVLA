@@ -31,7 +31,9 @@ class EvalSample(TypedDict):
 
 class Observations(TypedDict):
     goal: str
-    initial_agent_location: Union[np.ndarray, List[float]]  # 6 floats (xyz + 0rotation0)
+    initial_agent_location: Union[
+        np.ndarray, List[float]
+    ]  # 6 floats (xyz + 0rotation0)
     actions: List[str]
     time_ids: List[int]
     templated_task_type: str

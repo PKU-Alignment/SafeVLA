@@ -135,9 +135,13 @@ class StretchController:
         return wrist_center["position"]
 
     def dist_from_arm_to_obj(self, object_id):
-        object_location = [self.get_object_position(object_id)[k] for k in ["x", "y", "z"]]
+        object_location = [
+            self.get_object_position(object_id)[k] for k in ["x", "y", "z"]
+        ]
         arm_location = self.get_arm_wrist_absolute_position()
-        return (torch.Tensor(arm_location) - torch.Tensor(object_location)).norm().item()
+        return (
+            (torch.Tensor(arm_location) - torch.Tensor(object_location)).norm().item()
+        )
 
     def agent_l2_distance_to_point(self, point: Dict[str, float], ignore_y=False):
         agent_location = self.controller.last_event.metadata["agent"]["position"]
@@ -241,7 +245,9 @@ class StretchController:
         y = arm[0]["rootRelativePosition"]["y"] - 0.16297650337219238
         return dict(x=x, y=y, z=z)
 
-    def teleport_agent(self, position: Vector3, rotation: Union[Vector3, float], **kwargs) -> Event:
+    def teleport_agent(
+        self, position: Vector3, rotation: Union[Vector3, float], **kwargs
+    ) -> Event:
         if isinstance(rotation, Dict):
             rotation = rotation["y"]
 
@@ -303,7 +309,9 @@ class StretchController:
             cam["orthographic"] = False
             cam["farClippingPlane"] = 50
             del cam["orthographicSize"]
-            self.controller.step({"action": "AddThirdPartyCamera", "skyboxColor": "white", **cam})
+            self.controller.step(
+                {"action": "AddThirdPartyCamera", "skyboxColor": "white", **cam}
+            )
 
         waypoints = []
 
@@ -376,7 +384,8 @@ class StretchController:
             "voxelSize": 0.1666667,
         }
         scene["metadata"]["navMeshes"] = [
-            {**base_agent_navmesh, **{"id": i, "agentRadius": r}} for (i, r) in AGENT_RADIUS_LIST
+            {**base_agent_navmesh, **{"id": i, "agentRadius": r}}
+            for (i, r) in AGENT_RADIUS_LIST
         ]
 
         # Mostly for Phone2Proc scenes - may not work but will be corrected if possible in the scene reset.
@@ -398,7 +407,9 @@ class StretchController:
         self.calibrate_agent()
 
         # Do not display the unrealistic blue sphere on the agent's gripper
-        self.controller.step("ToggleMagnetVisibility", visible=False, raise_for_failure=True)
+        self.controller.step(
+            "ToggleMagnetVisibility", visible=False, raise_for_failure=True
+        )
         self.set_object_filter([])
 
         self.room_poly_map, self.room_type_dict = get_rooms_polymap_and_type(
@@ -423,9 +434,15 @@ class StretchController:
         assert which_camera in ["nav", "manip", "both"]
 
         # Use the appropriate cache if it's available
-        if which_camera == "nav" and maximum_distance in self._nav_visible_objects_cache:
+        if (
+            which_camera == "nav"
+            and maximum_distance in self._nav_visible_objects_cache
+        ):
             return self._nav_visible_objects_cache[maximum_distance]
-        elif which_camera == "manip" and maximum_distance in self._manip_visible_objects_cache:
+        elif (
+            which_camera == "manip"
+            and maximum_distance in self._manip_visible_objects_cache
+        ):
             return self._manip_visible_objects_cache[maximum_distance]
         elif (
             maximum_distance in self._nav_visible_objects_cache
@@ -456,9 +473,13 @@ class StretchController:
                     maxDistance=maximum_distance,
                     thirdPartyCameraIndex=0,
                 ).metadata["actionReturn"]
-                self._manip_visible_objects_cache[maximum_distance] = manip_visible_objects
+                self._manip_visible_objects_cache[maximum_distance] = (
+                    manip_visible_objects
+                )
             else:
-                manip_visible_objects = self._manip_visible_objects_cache[maximum_distance]
+                manip_visible_objects = self._manip_visible_objects_cache[
+                    maximum_distance
+                ]
             visible_objects.update(manip_visible_objects)
 
         return list(visible_objects)
@@ -476,7 +497,9 @@ class StretchController:
             step_dict["thirdPartyCameraIndex"] = 0
         return self.step(**step_dict).metadata["actionReturn"]
 
-    def object_is_visible_in_camera(self, object_id, which_camera="nav", maximum_distance=2):
+    def object_is_visible_in_camera(
+        self, object_id, which_camera="nav", maximum_distance=2
+    ):
         # choices: 'nav','manip','both'
         # some duplication with get seen but backwards compatible/utility function
         return object_id in self.get_visible_objects(
@@ -486,7 +509,9 @@ class StretchController:
 
     def get_objects(self) -> List[SPOCObject]:
         with self.include_object_metadata_context():
-            return [SPOCObject(o) for o in self.controller.last_event.metadata["objects"]]
+            return [
+                SPOCObject(o) for o in self.controller.last_event.metadata["objects"]
+            ]
 
     def get_synset_and_pos_dict(self, uninteresting_synsets: Set[str]):
         all_obj = {}
@@ -536,15 +561,28 @@ class StretchController:
         ).metadata["actionReturn"]
 
         on_oids = list(
-            set(sum([on_oid for on_oid in oid_to_on_oids.values() if on_oid is not None], []))
+            set(
+                sum(
+                    [
+                        on_oid
+                        for on_oid in oid_to_on_oids.values()
+                        if on_oid is not None
+                    ],
+                    [],
+                )
+            )
         )
 
         on_oid_to_object = {None: None}
         if len(on_oids) != 0:
             on_oid_metadata = self.controller.step(
-                action="GetMinimalObjectMetadata", objectIds=on_oids, raise_for_failure=True
+                action="GetMinimalObjectMetadata",
+                objectIds=on_oids,
+                raise_for_failure=True,
             ).metadata["actionReturn"]
-            on_oid_to_object.update({md["objectId"]: SPOCObject(md) for md in on_oid_metadata})
+            on_oid_to_object.update(
+                {md["objectId"]: SPOCObject(md) for md in on_oid_metadata}
+            )
 
         return {
             oid: [on_oid_to_object[on_oid] for on_oid in on_oids]
@@ -559,9 +597,9 @@ class StretchController:
         :param object_id:
         :return:
         """
-        source_receptacle_ids = self.get_object(object_id, include_receptacle_info=True)[
-            "parentReceptacles"
-        ]
+        source_receptacle_ids = self.get_object(
+            object_id, include_receptacle_info=True
+        )["parentReceptacles"]
 
         if source_receptacle_ids is None:  # TODO why do we ever get into none?
             source_receptacle_ids = []
@@ -574,7 +612,9 @@ class StretchController:
 
     def get_locations_on_receptacle(self, receptacle_id):
         result = self.step(
-            action="GetSpawnCoordinatesAboveReceptacle", objectId=receptacle_id, anywhere=True
+            action="GetSpawnCoordinatesAboveReceptacle",
+            objectId=receptacle_id,
+            anywhere=True,
         )
         return result.metadata["actionReturn"]
 
@@ -618,13 +658,22 @@ class StretchController:
                 )
             ]
         else:
-            return [spocobj for spocobj in all_objs if spocobj["synset"] in target_object_synsets]
+            return [
+                spocobj
+                for spocobj in all_objs
+                if spocobj["synset"] in target_object_synsets
+            ]
 
     def get_all_objects_of_synset(
-        self, synset: str, include_hyponyms: bool, all_objs: Optional[List[SPOCObject]] = None
+        self,
+        synset: str,
+        include_hyponyms: bool,
+        all_objs: Optional[List[SPOCObject]] = None,
     ):
         return self.get_objects_of_synset_list(
-            target_object_synsets=[synset], include_hyponyms=include_hyponyms, all_objs=all_objs
+            target_object_synsets=[synset],
+            include_hyponyms=include_hyponyms,
+            all_objs=all_objs,
         )
 
     def get_available_object_synsets_from_synset_list(
@@ -651,7 +700,8 @@ class StretchController:
         :return:
         """
         if include_receptacle_info or any(
-            object_id == o["objectId"] for o in self.controller.last_event.metadata["objects"]
+            object_id == o["objectId"]
+            for o in self.controller.last_event.metadata["objects"]
         ):
             with self.include_object_metadata_context():
                 return SPOCObject(self.controller.last_event.get_object(object_id))
@@ -677,7 +727,9 @@ class StretchController:
             print(object_id)
             raise
 
-    def get_agent_alignment_to_object(self, object_id: str, use_arm_orientation: bool = False):
+    def get_agent_alignment_to_object(
+        self, object_id: str, use_arm_orientation: bool = False
+    ):
         current_agent_pose = self.get_current_agent_full_pose()
         if use_arm_orientation:
             current_agent_pose = copy.deepcopy(current_agent_pose)
@@ -691,7 +743,9 @@ class StretchController:
         if use_arm_orientation:
             current_agent_pose = copy.deepcopy(current_agent_pose)
             current_agent_pose["rotation"]["y"] += 90
-        wall_location = get_wall_center_floor_level(wall_id, y=current_agent_pose["position"]["y"])
+        wall_location = get_wall_center_floor_level(
+            wall_id, y=current_agent_pose["position"]["y"]
+        )
         return rotation_from(current_agent_pose, wall_location)
 
     def get_reachable_positions(self, grid_size: Optional[float] = None):
@@ -700,7 +754,9 @@ class StretchController:
             # positions that are reachable when not moving with 90 degree rotations
             grid_size = AGENT_MOVEMENT_CONSTANT * 0.75
 
-        rp_event = self.controller.step(action="GetReachablePositions", gridSize=grid_size)
+        rp_event = self.controller.step(
+            action="GetReachablePositions", gridSize=grid_size
+        )
         if not rp_event:
             # NOTE: Skip scenes where GetReachablePositions fails
             warnings.warn(f"GetReachablePositions failed in {self.current_scene_json}")
@@ -728,12 +784,16 @@ class StretchController:
 
         if action == THORActions.move_ahead:
             if self.use_quick_navi_action:
-                action_dict = dict(action="MoveAheadQuick", moveMagnitude=AGENT_MOVEMENT_CONSTANT)
+                action_dict = dict(
+                    action="MoveAheadQuick", moveMagnitude=AGENT_MOVEMENT_CONSTANT
+                )
             else:
                 action_dict = dict(action="MoveAgent", ahead=AGENT_MOVEMENT_CONSTANT)
         elif action == THORActions.move_back:
             if self.use_quick_navi_action:
-                action_dict = dict(action="MoveBackQuick", moveMagnitude=AGENT_MOVEMENT_CONSTANT)
+                action_dict = dict(
+                    action="MoveBackQuick", moveMagnitude=AGENT_MOVEMENT_CONSTANT
+                )
             else:
                 action_dict = dict(action="MoveAgent", ahead=-AGENT_MOVEMENT_CONSTANT)
         elif action in [
@@ -788,7 +848,9 @@ class StretchController:
                 base_position["z"] -= small_change_value
             action_dict = dict(
                 action="MoveArm",
-                position=dict(x=base_position["x"], y=base_position["y"], z=base_position["z"]),
+                position=dict(
+                    x=base_position["x"], y=base_position["y"], z=base_position["z"]
+                ),
             )
         elif action in [
             THORActions.wrist_open,
@@ -800,7 +862,9 @@ class StretchController:
                     WRIST_ROTATION, abs(curr_wrist - (STRETCH_WRIST_BOUND_2 + 360))
                 )
             else:  # action == THORActions.wrist_close:
-                rotation_value = min(WRIST_ROTATION, abs(STRETCH_WRIST_BOUND_1 - curr_wrist))
+                rotation_value = min(
+                    WRIST_ROTATION, abs(STRETCH_WRIST_BOUND_1 - curr_wrist)
+                )
 
             action_dict = dict(action="RotateWristRelative", yaw=rotation_value)
         elif action == THORActions.pickup:
@@ -827,7 +891,9 @@ class StretchController:
         agent_moved = self.sufficient_agent_state_change(
             agents_full_pose_before_action, agents_full_pose_after_action
         )
-        collision_in_error_message = "collided" in event.metadata["errorMessage"].lower()
+        collision_in_error_message = (
+            "collided" in event.metadata["errorMessage"].lower()
+        )
         if action == THORActions.pickup:
             action_success = False
         elif action == THORActions.dropoff:
@@ -917,7 +983,9 @@ class StretchController:
 
     def dist_from_arm_sphere_center_to_obj(self, object_id):
         return position_dist(
-            self.get_object_position(object_id), self.get_arm_sphere_center(), ignore_y=False
+            self.get_object_position(object_id),
+            self.get_arm_sphere_center(),
+            ignore_y=False,
         )
 
     def dist_from_arm_sphere_center_to_obj_colliders_closest_to_point(self, object_id):
@@ -930,7 +998,10 @@ class StretchController:
         if points_on_obj is None or len(points_on_obj) == 0:
             return self.dist_from_arm_sphere_center_to_obj(object_id)
         else:
-            dists = [position_dist(arm_sphere_center, p, ignore_y=False) for p in points_on_obj]
+            dists = [
+                position_dist(arm_sphere_center, p, ignore_y=False)
+                for p in points_on_obj
+            ]
         return min(dists)
 
     def does_some_shortest_path_to_object_exist(
@@ -1023,7 +1094,9 @@ class StretchController:
         mask = masks[object_id]
         return mask.sum()
 
-    def is_object_visible_enough_for_interaction(self, object_id: str, manipulation_camera=True):
+    def is_object_visible_enough_for_interaction(
+        self, object_id: str, manipulation_camera=True
+    ):
         return is_any_object_sufficiently_visible_and_in_center_frame(
             controller=self,
             object_ids=[object_id],
@@ -1060,7 +1133,9 @@ class StretchController:
             (
                 wall_id,
                 self.get_shortest_path_to_point(
-                    get_wall_center_floor_level(wall_id, y=self.get_current_agent_position()["y"]),
+                    get_wall_center_floor_level(
+                        wall_id, y=self.get_current_agent_position()["y"]
+                    ),
                     specific_agent_meshes=[self.agent_ids[-1]],
                     attempt_path_improvement=False,
                 ),
@@ -1077,7 +1152,9 @@ class StretchController:
             if dist < min_dist:
                 min_dist = dist
                 closest_wall_id = wall_id
-        return closest_wall_id if not return_id_and_dist else (closest_wall_id, min_dist)
+        return (
+            closest_wall_id if not return_id_and_dist else (closest_wall_id, min_dist)
+        )
 
     def get_candidate_points_in_room(
         self,
@@ -1092,7 +1169,8 @@ class StretchController:
             room_triangles = triangulate_room_polygon(polygon)
 
         candidate_points = [
-            ((t.centroid.x, t.centroid.y), t.area) for t in room_triangles  # type:ignore
+            ((t.centroid.x, t.centroid.y), t.area)
+            for t in room_triangles  # type:ignore
         ]
 
         # We sort the triangles by size so we try to go to the center of the largest triangle first
@@ -1120,7 +1198,9 @@ class StretchController:
             room_triangles=room_triangles,
         )
 
-        current_agent_position = self.controller.last_event.metadata["agent"]["position"]
+        current_agent_position = self.controller.last_event.metadata["agent"][
+            "position"
+        ]
         y = current_agent_position["y"]
 
         if specific_agent_meshes is None:
@@ -1172,7 +1252,9 @@ class StretchController:
                 min_dist = dist
                 closest_room_id = room_id
 
-        return closest_room_id if not return_id_and_dist else (closest_room_id, min_dist)
+        return (
+            closest_room_id if not return_id_and_dist else (closest_room_id, min_dist)
+        )
 
     def get_current_scene_json(self):
         return self.current_scene_json

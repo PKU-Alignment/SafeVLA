@@ -29,7 +29,11 @@ class SPOCObject(dict):
         return {}
 
     def __getitem__(self, item):
-        if self.is_objaverse and item == "objectType" and self._thor_obj[item] == "Undefined":
+        if (
+            self.is_objaverse
+            and item == "objectType"
+            and self._thor_obj[item] == "Undefined"
+        ):
             return self._thor_obj["objectId"].split("|")[0]
 
         if item in self._thor_obj:
@@ -61,7 +65,9 @@ class SPOCObject(dict):
             self._cache[item] = self.annotation[item]
 
         elif not self.is_objaverse and item == "description":
-            self._cache[item] = f"undescribed THOR item, type {self._thor_obj['objectType']}"
+            self._cache[item] = (
+                f"undescribed THOR item, type {self._thor_obj['objectType']}"
+            )
 
         else:
             raise ValueError(f"Unknown key {item}")
@@ -108,11 +114,14 @@ class SPOCObject(dict):
             return False
         self_keys = self._key_set()
         other_keys = other._key_set()
-        return (self_keys == other_keys) and all(self[key] == other[key] for key in self_keys)
+        return (self_keys == other_keys) and all(
+            self[key] == other[key] for key in self_keys
+        )
 
     def __str__(self):
         return json.dumps(
-            {**self._thor_obj, **self._cache, "isObjaverse": self.is_objaverse}, indent=2
+            {**self._thor_obj, **self._cache, "isObjaverse": self.is_objaverse},
+            indent=2,
         )
 
     # noinspection PyStatementEffect

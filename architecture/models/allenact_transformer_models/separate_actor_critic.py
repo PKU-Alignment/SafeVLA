@@ -1,4 +1,4 @@
-from utils.saferl_utils import SafeActorCriticOutput
+from allenact.base_abstractions.misc import SafeActorCriticOutput, Memory
 
 from architecture.models.allenact_transformer_models.allenact_dino_transformer import (
     DinoLLAMATxNavActorCritic,

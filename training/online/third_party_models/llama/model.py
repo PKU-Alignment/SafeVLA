@@ -293,12 +293,18 @@ class Attention(nn.Module):
             values = xv
 
         # repeat k/v heads if n_kv_heads < n_heads
-        keys = repeat_kv(keys, self.n_rep)  # (bs, cache_len + seqlen, n_local_heads, head_dim)
-        values = repeat_kv(values, self.n_rep)  # (bs, cache_len + seqlen, n_local_heads, head_dim)
+        keys = repeat_kv(
+            keys, self.n_rep
+        )  # (bs, cache_len + seqlen, n_local_heads, head_dim)
+        values = repeat_kv(
+            values, self.n_rep
+        )  # (bs, cache_len + seqlen, n_local_heads, head_dim)
 
         xq = xq.transpose(1, 2)  # (bs, n_local_heads, seqlen, head_dim)
         keys = keys.transpose(1, 2)  # (bs, n_local_heads, cache_len + seqlen, head_dim)
-        values = values.transpose(1, 2)  # (bs, n_local_heads, cache_len + seqlen, head_dim)
+        values = values.transpose(
+            1, 2
+        )  # (bs, n_local_heads, cache_len + seqlen, head_dim)
 
         # From llama implementation
         # scores = torch.matmul(xq, keys.transpose(2, 3)) / math.sqrt(self.head_dim)
@@ -308,7 +314,9 @@ class Attention(nn.Module):
         # output = torch.matmul(scores, values)  # (bs, n_local_heads, seqlen, head_dim)
 
         # From lit-llama implementation
-        output = F.scaled_dot_product_attention(xq, keys, values, attn_mask=mask, dropout_p=0.0)
+        output = F.scaled_dot_product_attention(
+            xq, keys, values, attn_mask=mask, dropout_p=0.0
+        )
 
         output = output.transpose(1, 2).contiguous().view(bsz, seqlen, -1)
         return self.wo(output)
@@ -433,7 +441,9 @@ class TransformerDecoder(nn.Module):
             if hasattr(layer, "sampler_select"):
                 layer.sampler_select(keep)
 
-    def forward(self, tokens: torch.Tensor, start_pos: int, mask: Optional[torch.Tensor] = None):
+    def forward(
+        self, tokens: torch.Tensor, start_pos: int, mask: Optional[torch.Tensor] = None
+    ):
         _bsz, seqlen, hidden_size = tokens.shape
         h = tokens
 

@@ -28,6 +28,9 @@ for _, module_name, _ in iter_modules([package_dir]):
         attribute = getattr(module, attribute_name)
         if isclass(attribute):
             # Add the class to this package's variables
-            if issubclass(attribute, AbstractSPOCTask) and attribute != AbstractSPOCTask:
+            if (
+                issubclass(attribute, AbstractSPOCTask)
+                and attribute != AbstractSPOCTask
+            ):
                 globals()[attribute_name] = attribute
                 register_task(attribute)

@@ -42,12 +42,23 @@ from utils.task_datagen_utils import (
     add_extra_sensors_to_task_args,
 )
 from utils.type_utils import THORActions
-from utils.visualization_utils import add_bbox_sensor_to_image, get_top_down_frame, VideoLogging
+from utils.visualization_utils import (
+    add_bbox_sensor_to_image,
+    get_top_down_frame,
+    VideoLogging,
+)
 from utils.sel_utils import sel_metric
 
 
 def start_worker(
-    worker, agent_class, agent_input, device, tasks_queue, results_queue, tasks_list, timestamp
+    worker,
+    agent_class,
+    agent_input,
+    device,
+    tasks_queue,
+    results_queue,
+    tasks_list,
+    timestamp,
 ):
     if device != "cpu" and isinstance(device, int):
         torch.cuda.set_device(device)
@@ -129,7 +140,9 @@ class OnlineEvaluatorWorker:
 
         if self.det_type == "detic":
             nav_box_fast = TaskRelevantObjectBBoxSensorDeticOnlineEvalDetic(
-                which_camera="nav", uuid="nav_task_relevant_object_bbox", gpu_device=self.gpu_device
+                which_camera="nav",
+                uuid="nav_task_relevant_object_bbox",
+                gpu_device=self.gpu_device,
             )
             nav_box_accurate = TaskRelevantObjectBBoxSensorDummy(
                 which_camera="nav",
@@ -202,7 +215,9 @@ class OnlineEvaluatorWorker:
         except (KeyboardInterrupt, SystemExit):
             raise
         except:
-            print(f"WARNING: worker {self.worker_id} failed to stop with non-None task_sampler")
+            print(
+                f"WARNING: worker {self.worker_id} failed to stop with non-None task_sampler"
+            )
         finally:
             self._task_sampler = None
 
@@ -248,7 +263,9 @@ class OnlineEvaluatorWorker:
 
         return self._task_sampler
 
-    def evaluate_on_task(self, task: AbstractSPOCTask, agent: AbstractAgent, worker_id: int):
+    def evaluate_on_task(
+        self, task: AbstractSPOCTask, agent: AbstractAgent, worker_id: int
+    ):
         goal = task.task_info["natural_language_spec"]
         # task_path points out the episode's origin (i.e., which task, episode id, streaming id)
         task_path = "/".join(task.task_info["eval_info"]["task_path"].split("/")[-4:])
@@ -270,10 +287,16 @@ class OnlineEvaluatorWorker:
             while len(all_actions) < task.max_steps:
                 eps_idx += 1
                 observations = task.get_observations()
-                observations = {k: v for k, v in observations.items() if k in self.input_sensors}
+                observations = {
+                    k: v for k, v in observations.items() if k in self.input_sensors
+                }
 
                 curr_frame = np.concatenate(
-                    [task.controller.navigation_camera, task.controller.manipulation_camera], axis=1
+                    [
+                        task.controller.navigation_camera,
+                        task.controller.manipulation_camera,
+                    ],
+                    axis=1,
                 )
                 danger = task.last_action_danger
                 blind = task.last_action_blind
@@ -349,7 +372,9 @@ class OnlineEvaluatorWorker:
         target_ids = None
         if "synset_to_object_ids" in task.task_info:
             target_ids = list(
-                chain.from_iterable(task.task_info.get("synset_to_object_ids", None).values())
+                chain.from_iterable(
+                    task.task_info.get("synset_to_object_ids", None).values()
+                )
             )
 
         top_down_frame, agent_path = get_top_down_frame(
@@ -384,7 +409,9 @@ class OnlineEvaluatorWorker:
 
     def get_num_pixels_visible(self, which_camera: Literal["nav", "manip"], task):
         observations = task.get_observation_history()
-        num_frames_visible = [obs[f"num_pixels_visible_{which_camera}"] for obs in observations]
+        num_frames_visible = [
+            obs[f"num_pixels_visible_{which_camera}"] for obs in observations
+        ]
         max_num_frame_obj_visible = max(num_frames_visible).item()
         return max_num_frame_obj_visible
 
@@ -394,11 +421,16 @@ class OnlineEvaluatorWorker:
         object_type = task.task_info["synsets"][0]
         object_ids = task.task_info["synset_to_object_ids"][object_type]
         target_object_rooms = [
-            task.controller.get_objects_room_id_and_type(obj_id)[0] for obj_id in object_ids
+            task.controller.get_objects_room_id_and_type(obj_id)[0]
+            for obj_id in object_ids
         ]
         target_object_rooms = [int(x.replace("room|", "")) for x in target_object_rooms]
-        agents_visited_rooms = [obs["current_agent_room"].item() for obs in observations]
-        visited_the_objects_room = [x for x in target_object_rooms if x in agents_visited_rooms]
+        agents_visited_rooms = [
+            obs["current_agent_room"].item() for obs in observations
+        ]
+        visited_the_objects_room = [
+            x for x in target_object_rooms if x in agents_visited_rooms
+        ]
         visited_objects_room = len(visited_the_objects_room) > 0
         return visited_objects_room
 
@@ -411,13 +443,13 @@ class OnlineEvaluatorWorker:
                     self.has_agent_been_in_obj_room(task)
                 )
 
-                metrics[f"extra/{object_type}/when_failed_max_visible_pixels_navigation"] = (
-                    self.get_num_pixels_visible("nav", task)
-                )
+                metrics[
+                    f"extra/{object_type}/when_failed_max_visible_pixels_navigation"
+                ] = self.get_num_pixels_visible("nav", task)
 
-                metrics[f"extra/{object_type}/when_failed_max_visible_pixels_manipulation"] = (
-                    self.get_num_pixels_visible("manip", task)
-                )
+                metrics[
+                    f"extra/{object_type}/when_failed_max_visible_pixels_manipulation"
+                ] = self.get_num_pixels_visible("manip", task)
 
             metrics[f"extra/{object_type}/success"] = metrics[
                 "success"
@@ -440,9 +472,13 @@ class OnlineEvaluatorWorker:
     def calc_pickup_success(self, task, object_type):
         observations = task.get_observation_history()
         if object_type == "task_relevant":
-            pickup_success = [obs["target_obj_was_pickedup"].item() for obs in observations]
+            pickup_success = [
+                obs["target_obj_was_pickedup"].item() for obs in observations
+            ]
         elif object_type == "any":
-            pickup_success = [obs["an_object_is_in_hand"].item() for obs in observations]
+            pickup_success = [
+                obs["an_object_is_in_hand"].item() for obs in observations
+            ]
         else:
             raise NotImplementedError
         pickup_success = sum(pickup_success) > 0
@@ -493,7 +529,9 @@ class OnlineEvaluatorWorker:
         ):
             metrics["failed_but_tried_pickup"] = int(THORActions.pickup in all_actions)
 
-        trajectory = [obs["last_agent_location"][:3] for obs in task.observation_history]
+        trajectory = [
+            obs["last_agent_location"][:3] for obs in task.observation_history
+        ]
 
         if task.room_poly_map is not None:
             percentage_visited, total_visited = calc_trajectory_room_visitation(
@@ -510,15 +548,19 @@ class OnlineEvaluatorWorker:
             for obs in all_observations
             if obs["last_action_success"] != -1
         ]  # Removing -1 which is for the first action
-        metrics["percentage_collision"] = 1 - sum(all_collisions) / (1e-9 + len(all_collisions))
+        metrics["percentage_collision"] = 1 - sum(all_collisions) / (
+            1e-9 + len(all_collisions)
+        )
 
         if "synsets" in task.task_info:
             list_of_object_types = task.task_info["synsets"]
             list_of_object_types = sorted(list_of_object_types)
             metrics["for_video_table/object_types"] = str(list_of_object_types)
-            metrics["for_video_table/vis_pix_navigation"] = self.get_num_pixels_visible("nav", task)
-            metrics["for_video_table/vis_pix_manipulation"] = self.get_num_pixels_visible(
-                "manip", task
+            metrics["for_video_table/vis_pix_navigation"] = self.get_num_pixels_visible(
+                "nav", task
+            )
+            metrics["for_video_table/vis_pix_manipulation"] = (
+                self.get_num_pixels_visible("manip", task)
             )
             metrics["for_video_table/total_rooms"] = len(task.house["rooms"])
             metrics["for_video_table/pickup_sr"] = self.calc_pickup_success(
@@ -527,8 +569,8 @@ class OnlineEvaluatorWorker:
             metrics["for_video_table/pickup_sr_any"] = self.calc_pickup_success(
                 task, object_type="any"
             )
-            metrics["for_video_table/has_agent_been_in_room"] = self.has_agent_been_in_obj_room(
-                task
+            metrics["for_video_table/has_agent_been_in_room"] = (
+                self.has_agent_been_in_obj_room(task)
             )
 
         assert (
@@ -555,7 +597,9 @@ class OnlineEvaluatorWorker:
             try:
                 task = self.task_sampler.next_task()
                 if self.pre_defined_max_steps == -1:
-                    task.max_steps = MAX_EPISODE_LEN_PER_TASK[task.task_info["task_type"]]
+                    task.max_steps = MAX_EPISODE_LEN_PER_TASK[
+                        task.task_info["task_type"]
+                    ]
                 else:
                     print(
                         f"IMPORTANT WARNING: YOU ARE SETTING MAX STEPS {self.pre_defined_max_steps} MANUALLY"
@@ -565,13 +609,17 @@ class OnlineEvaluatorWorker:
                     task.max_steps = self.pre_defined_max_steps
 
             except EmptyQueueError:
-                print(f"Terminating worker {self.worker_id}: No houses left in house_tasks.")
+                print(
+                    f"Terminating worker {self.worker_id}: No houses left in house_tasks."
+                )
                 break
 
             if verbose:
                 print(f"Sample {num_tasks}")
 
-            sample_result = self.evaluate_on_task(task=task, agent=agent, worker_id=self.worker_id)
+            sample_result = self.evaluate_on_task(
+                task=task, agent=agent, worker_id=self.worker_id
+            )
 
             task_info = {**task.task_info, **task.task_info["eval_info"]}
             del task_info["eval_info"]
@@ -588,7 +636,9 @@ class OnlineEvaluatorWorker:
 
             video_table_data = None
             if send_videos_back and task_info["needs_video"]:
-                flag = "Success" if sample_result["metrics"]["success"] > 0.1 else "Failed"
+                flag = (
+                    "Success" if sample_result["metrics"]["success"] > 0.1 else "Failed"
+                )
                 eps_name = (
                     f"{sample_result['metrics']['corner']}_{sample_result['metrics']['blind']}"
                     + "_"
@@ -605,11 +655,16 @@ class OnlineEvaluatorWorker:
                 video_path_to_send = cast(str, os.path.join(self.outdir, eps_name))
                 print(f"Saving video to {video_path_to_send}")
                 save_frames_to_mp4(
-                    frames=sample_result["all_video_frames"], file_path=video_path_to_send, fps=5
+                    frames=sample_result["all_video_frames"],
+                    file_path=video_path_to_send,
+                    fps=5,
                 )
 
                 topdown_view_path = os.path.join(self.outdir, eps_name + "_topdown.png")
-                plt.imsave(fname=cast(str, topdown_view_path), arr=sample_result["top_down_frame"])
+                plt.imsave(
+                    fname=cast(str, topdown_view_path),
+                    arr=sample_result["top_down_frame"],
+                )
 
                 # task_path = task_dict["task_path"]
                 gt_episode_len = task_info["expert_length"]

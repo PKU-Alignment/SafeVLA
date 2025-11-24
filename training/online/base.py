@@ -69,7 +69,9 @@ def task_sampler_args_builder(
             task_specs.total_procs == total_processes
         ), f"Hdf5TaskSpecs.total_procs ({task_specs.total_procs}) must match total_processes ({total_processes})"
         selected_task_specs = task_specs
-        selected_house_inds = [task_spec["house_index"] for task_spec in selected_task_specs]
+        selected_house_inds = [
+            task_spec["house_index"] for task_spec in selected_task_specs
+        ]
         selected_houses = houses.select(selected_house_inds)
     else:
         raise NotImplementedError(
@@ -138,10 +140,16 @@ class BaseConfig(ExperimentConfig, ABC):
         super().__init__()
         self.params = params
         self.num_validation_processes = 0  # allenact only supports 1 validation process
-        self.num_test_processes = 2 * torch.cuda.device_count() if torch.cuda.is_available() else 1
+        self.num_test_processes = (
+            2 * torch.cuda.device_count() if torch.cuda.is_available() else 1
+        )
 
         self.houses = dict(
-            train=self.get_houses(subset="train") if params.num_train_processes > 0 else None,
+            train=(
+                self.get_houses(subset="train")
+                if params.num_train_processes > 0
+                else None
+            ),
             val=self.get_houses(subset="val"),
         )
 
@@ -203,11 +211,15 @@ class BaseConfig(ExperimentConfig, ABC):
         if mode == "train":
             if self.params.num_train_processes == 0:
                 return [0] * num_devices
-            return evenly_distribute_count_into_bins(self.params.num_train_processes, num_devices)
+            return evenly_distribute_count_into_bins(
+                self.params.num_train_processes, num_devices
+            )
         elif mode == "valid":
             return [self.num_validation_processes]
         elif mode == "test":
-            return evenly_distribute_count_into_bins(self.num_test_processes, num_devices)
+            return evenly_distribute_count_into_bins(
+                self.num_test_processes, num_devices
+            )
         else:
             raise NotImplementedError("mode must be train, valid or test")
 
@@ -262,7 +274,9 @@ class BaseConfig(ExperimentConfig, ABC):
         if mode == "train":
             params.nprocesses = params.nprocesses * self.params.distributed_nodes
             params.devices = params.devices * self.params.distributed_nodes
-            params.sampler_devices = params.sampler_devices * self.params.distributed_nodes
+            params.sampler_devices = (
+                params.sampler_devices * self.params.distributed_nodes
+            )
             params.set_local_worker_ids(local_worker_ids)
 
         return params

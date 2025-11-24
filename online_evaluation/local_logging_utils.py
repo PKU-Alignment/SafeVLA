@@ -90,7 +90,10 @@ class LoadLocalWandb:
         with open(os.path.join(self.save_dir, self.run_id, "config.yaml"), "r") as f:
             config = yaml.safe_load(f)
         result = {}
-        for k, v in config.items():  # To support the config file format loaded from wandb
+        for (
+            k,
+            v,
+        ) in config.items():  # To support the config file format loaded from wandb
             if type(v) == dict and "value" in v:
                 result[k] = v["value"]
             else:

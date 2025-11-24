@@ -71,7 +71,9 @@ class SigLIPPreprocessor(Preprocessor):
         shape = output_shape
 
         input_uuids = [rgb_input_uuid]
-        assert len(input_uuids) == 1, "resnet preprocessor can only consume one observation type"
+        assert (
+            len(input_uuids) == 1
+        ), "resnet preprocessor can only consume one observation type"
 
         observation_space = gym.spaces.Box(low=low, high=high, shape=shape)
 
@@ -81,9 +83,9 @@ class SigLIPPreprocessor(Preprocessor):
     def vit(self) -> SigLIPViTEmbedder:
         if self._vit is None:
             self._vit = SigLIPViTEmbedder(
-                model=create_model_from_pretrained("hf-hub:timm/{}".format(self.siglip_model_type))[
-                    0
-                ].visual.trunk
+                model=create_model_from_pretrained(
+                    "hf-hub:timm/{}".format(self.siglip_model_type)
+                )[0].visual.trunk
             ).to(self.device)
             for module in self._vit.modules():
                 if "BatchNorm" in type(module).__name__:
@@ -146,8 +148,12 @@ class DataAugmentationPreprocessor(Preprocessor):
         device: Optional[torch.device] = None,
         device_ids: Optional[List[torch.device]] = None,
         normalize: bool = True,
-        mean: Optional[Union[np.ndarray, Sequence[float]]] = SigLIPPreprocessor.SIGLIP_RGB_MEANS,
-        stdev: Optional[Union[np.ndarray, Sequence[float]]] = SigLIPPreprocessor.SIGLIP_RGB_STDS,
+        mean: Optional[
+            Union[np.ndarray, Sequence[float]]
+        ] = SigLIPPreprocessor.SIGLIP_RGB_MEANS,
+        stdev: Optional[
+            Union[np.ndarray, Sequence[float]]
+        ] = SigLIPPreprocessor.SIGLIP_RGB_STDS,
         height: Optional[int] = None,
         width: Optional[int] = None,
         output_channels: Optional[int] = 3,
@@ -162,7 +168,9 @@ class DataAugmentationPreprocessor(Preprocessor):
         self._vit: Optional[SigLIPViTEmbedder] = None
 
         self.normalize = normalize
-        self.mean = torch.from_numpy(np.array(mean, dtype=np.float32).reshape((1, len(mean), 1, 1)))
+        self.mean = torch.from_numpy(
+            np.array(mean, dtype=np.float32).reshape((1, len(mean), 1, 1))
+        )
         self.stdev = torch.from_numpy(
             np.array(stdev, dtype=np.float32).reshape((1, len(stdev), 1, 1))
         )
@@ -181,7 +189,9 @@ class DataAugmentationPreprocessor(Preprocessor):
         shape = (cast(int, height), cast(int, width), cast(int, output_channels))
 
         input_uuids = [rgb_input_uuid]
-        assert len(input_uuids) == 1, "resnet preprocessor can only consume one observation type"
+        assert (
+            len(input_uuids) == 1
+        ), "resnet preprocessor can only consume one observation type"
 
         observation_space = gym.spaces.Box(low=low, high=high, shape=shape)
 

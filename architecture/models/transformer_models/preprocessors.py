@@ -43,7 +43,9 @@ def tensor_image_preprocessor(
         ]
 
     if data_augmentation:
-        data_aug_transforms = get_full_transformation_list(size=size, version=augmentation_version)
+        data_aug_transforms = get_full_transformation_list(
+            size=size, version=augmentation_version
+        )
         if specific:
             data_aug_transforms = sample_a_specific_transform(
                 Compose(data_aug_transforms)
@@ -137,7 +139,9 @@ class Preprocessor:
         last_actions_processor = self.get_last_actions_processor()
         last_actions = list(map(last_actions_processor, batch))
         if self.cfg.pad:
-            return pad_sequence(last_actions, batch_first=True, padding_value=len(self.action2idx))
+            return pad_sequence(
+                last_actions, batch_first=True, padding_value=len(self.action2idx)
+            )
 
         return last_actions
 
@@ -162,30 +166,40 @@ class Preprocessor:
     def process_visibility(self, batch):
         visibility = [torch.tensor(sample["visibility"]) for sample in batch]
         if self.cfg.pad:
-            return pad_sequence(visibility, batch_first=True, padding_value=-1).to(self.device)
+            return pad_sequence(visibility, batch_first=True, padding_value=-1).to(
+                self.device
+            )
 
         return visibility
 
     def process_rooms_seen(self, batch, key="rooms_seen"):
         rooms_seen = [torch.tensor(sample[key]) for sample in batch]
         if self.cfg.pad:
-            return pad_sequence(rooms_seen, batch_first=True, padding_value=19).to(self.device)
+            return pad_sequence(rooms_seen, batch_first=True, padding_value=19).to(
+                self.device
+            )
 
         return rooms_seen
 
     def process_room_current_seen(self, batch, key="room_current_seen"):
-        room_current_seen = [torch.tensor(sample[key], dtype=torch.int64) for sample in batch]
+        room_current_seen = [
+            torch.tensor(sample[key], dtype=torch.int64) for sample in batch
+        ]
         if self.cfg.pad:
-            return pad_sequence(room_current_seen, batch_first=True, padding_value=2).to(
-                self.device
-            )
+            return pad_sequence(
+                room_current_seen, batch_first=True, padding_value=2
+            ).to(self.device)
 
         return room_current_seen
 
     def process_time_ids(self, batch):
-        time_ids = [torch.tensor(sample["time_ids"][: self.cfg.max_steps]) for sample in batch]
+        time_ids = [
+            torch.tensor(sample["time_ids"][: self.cfg.max_steps]) for sample in batch
+        ]
         if self.cfg.pad:
-            return pad_sequence(time_ids, batch_first=True, padding_value=-1).to(self.device)
+            return pad_sequence(time_ids, batch_first=True, padding_value=-1).to(
+                self.device
+            )
 
         return time_ids
 
@@ -195,28 +209,34 @@ class Preprocessor:
             for sample in batch
         ]
         if self.cfg.pad:
-            return pad_sequence(obj_in_hand, batch_first=True, padding_value=2).to(self.device)
+            return pad_sequence(obj_in_hand, batch_first=True, padding_value=2).to(
+                self.device
+            )
 
         return obj_in_hand
 
     def process_arm_proprioceptive(self, batch):
         arm_proprioceptive = [
-            torch.tensor(sample["relative_arm_location_metadata"][: self.cfg.max_steps]).float()
+            torch.tensor(
+                sample["relative_arm_location_metadata"][: self.cfg.max_steps]
+            ).float()
             for sample in batch
         ]
         if self.cfg.pad:
-            return pad_sequence(arm_proprioceptive, batch_first=True, padding_value=-1).to(
-                self.device
-            )
+            return pad_sequence(
+                arm_proprioceptive, batch_first=True, padding_value=-1
+            ).to(self.device)
 
         return arm_proprioceptive
 
     def process_task_relevant_bbox(self, batch, sensor):
-        task_relevant_object_bbox = [torch.tensor(sample[sensor]).float() for sample in batch]
+        task_relevant_object_bbox = [
+            torch.tensor(sample[sensor]).float() for sample in batch
+        ]
         if self.cfg.pad:
-            return pad_sequence(task_relevant_object_bbox, batch_first=True, padding_value=-1).to(
-                self.device
-            )
+            return pad_sequence(
+                task_relevant_object_bbox, batch_first=True, padding_value=-1
+            ).to(self.device)
 
     def create_padding_mask(self, lengths, max_length):
         # Create a range tensor with the shape (1,max_length)
@@ -267,7 +287,9 @@ class Preprocessor:
         if "actions" in batch_keys:
             key_to_look_at = "actions"
         else:
-            key_to_look_at = random.choice([k for k in batch_keys if is_a_visual_sensor(k)])
+            key_to_look_at = random.choice(
+                [k for k in batch_keys if is_a_visual_sensor(k)]
+            )
 
         output["lengths"] = torch.tensor(
             [len(sample[key_to_look_at]) for sample in batch], dtype=torch.int32

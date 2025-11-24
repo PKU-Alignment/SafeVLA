@@ -64,7 +64,9 @@ class TextCondMultiCameraVisualEncoder(nn.Module):
             print("REAPLACING DINOV2 WITH DINOV2SMALL")
 
         if cfg.image_encoder in IMAGE_ENCODERS:
-            image_encoder_model_cls, image_encoder_cfg = IMAGE_ENCODERS[cfg.image_encoder]
+            image_encoder_model_cls, image_encoder_cfg = IMAGE_ENCODERS[
+                cfg.image_encoder
+            ]
             self.image_encoder = image_encoder_model_cls(image_encoder_cfg)
         else:
             raise NotImplementedError()
@@ -81,18 +83,24 @@ class TextCondMultiCameraVisualEncoder(nn.Module):
         self.text_encoder.eval()
 
         self.text_adapter = nn.Sequential(
-            nn.Linear(TEXT_ENCODER_DIMS[cfg.text_encoder], self.cfg.fusion_xformer.d_model),
+            nn.Linear(
+                TEXT_ENCODER_DIMS[cfg.text_encoder], self.cfg.fusion_xformer.d_model
+            ),
             nn.LayerNorm(self.cfg.fusion_xformer.d_model),
             nn.ReLU(),
         )
         self.fusion_xformer = nn.TransformerEncoder(
             nn.TransformerEncoderLayer(
-                d_model=cfg.fusion_xformer.d_model, nhead=cfg.fusion_xformer.nhead, batch_first=True
+                d_model=cfg.fusion_xformer.d_model,
+                nhead=cfg.fusion_xformer.nhead,
+                batch_first=True,
             ),
             num_layers=cfg.fusion_xformer.num_layers,
         )
         self.fusion_token = nn.Parameter(0.1 * torch.rand(cfg.fusion_xformer.d_model))
-        self.visual_sensors = [sensor for sensor in cfg.input_sensors if is_a_visual_sensor(sensor)]
+        self.visual_sensors = [
+            sensor for sensor in cfg.input_sensors if is_a_visual_sensor(sensor)
+        ]
         # KE: This is absolutely important! # KE2: Actually not so much anymore lol
         self.visual_sensors = sorted(self.visual_sensors)
         for sensor in self.visual_sensors:
@@ -124,7 +132,9 @@ class TextCondMultiCameraVisualEncoder(nn.Module):
                     nn.LayerNorm(self.cfg.fusion_xformer.d_model),
                     nn.ReLU(),
                 )
-                self.manip_coord_pos_enc = nn.Embedding(5, self.cfg.fusion_xformer.d_model)
+                self.manip_coord_pos_enc = nn.Embedding(
+                    5, self.cfg.fusion_xformer.d_model
+                )
             else:
                 raise NotImplementedError(
                     f"Unknown bbox encoding type '{self.cfg.bbox_encoding_type}' for bbox sensor, "
@@ -155,9 +165,15 @@ class TextCondMultiCameraVisualEncoder(nn.Module):
 
     def create_compressor(self):
         return nn.Sequential(
-            nn.Conv2d(self.image_encoder.cfg.output_size[0], self.cfg.fusion_xformer.d_model, 1),
+            nn.Conv2d(
+                self.image_encoder.cfg.output_size[0],
+                self.cfg.fusion_xformer.d_model,
+                1,
+            ),
             nn.ReLU(),
-            nn.Conv2d(self.cfg.fusion_xformer.d_model, self.cfg.fusion_xformer.d_model, 1),
+            nn.Conv2d(
+                self.cfg.fusion_xformer.d_model, self.cfg.fusion_xformer.d_model, 1
+            ),
             nn.ReLU(),
         )
 
@@ -208,7 +224,9 @@ class TextCondMultiCameraVisualEncoder(nn.Module):
                 task_relevant_object_bbox = task_relevant_object_bbox.reshape(B * T, N)
                 bbox_feats = self.bbox_pos_encoder(task_relevant_object_bbox)
                 bbox_feats = bbox_feats + self.coord_pos_enc(
-                    torch.tensor([[0, 1, 2, 3, 4]], device=bbox_feats.device).tile(B * T, 1)
+                    torch.tensor([[0, 1, 2, 3, 4]], device=bbox_feats.device).tile(
+                        B * T, 1
+                    )
                 )
             else:
                 raise NotImplementedError
@@ -218,10 +236,16 @@ class TextCondMultiCameraVisualEncoder(nn.Module):
         if manip_task_relevant_object_bbox is not None:
             B, T, N = manip_task_relevant_object_bbox.shape
             if self.cfg.bbox_encoding_type == "positional":
-                manip_task_relevant_object_bbox = manip_task_relevant_object_bbox.reshape(B * T, N)
-                bbox_feats = self.manip_bbox_pos_encoder(manip_task_relevant_object_bbox)
+                manip_task_relevant_object_bbox = (
+                    manip_task_relevant_object_bbox.reshape(B * T, N)
+                )
+                bbox_feats = self.manip_bbox_pos_encoder(
+                    manip_task_relevant_object_bbox
+                )
                 bbox_feats = bbox_feats + self.manip_coord_pos_enc(
-                    torch.tensor([[0, 1, 2, 3, 4]], device=bbox_feats.device).tile(B * T, 1)
+                    torch.tensor([[0, 1, 2, 3, 4]], device=bbox_feats.device).tile(
+                        B * T, 1
+                    )
                 )
             else:
                 raise NotImplementedError
@@ -241,7 +265,9 @@ class PositionalEncoder(nn.Module):
         super().__init__()
         self.d_model = d_model
         self.max_len = max_len
-        div_term = torch.exp(torch.arange(0, d_model, 2) * (-math.log(10000.0) / d_model))
+        div_term = torch.exp(
+            torch.arange(0, d_model, 2) * (-math.log(10000.0) / d_model)
+        )
         self.register_buffer("div_term", div_term)
 
     def forward(self, position):
@@ -280,7 +306,9 @@ class NonTxMultiCameraVisualEncoder(nn.Module):
             print("REAPLACING DINOV2 WITH DINOV2SMALL")
 
         if cfg.image_encoder in IMAGE_ENCODERS:
-            image_encoder_model_cls, image_encoder_cfg = IMAGE_ENCODERS[cfg.image_encoder]
+            image_encoder_model_cls, image_encoder_cfg = IMAGE_ENCODERS[
+                cfg.image_encoder
+            ]
             self.image_encoder = image_encoder_model_cls(image_encoder_cfg)
         else:
             raise NotImplementedError()
@@ -302,7 +330,9 @@ class NonTxMultiCameraVisualEncoder(nn.Module):
         )
 
         self.image_text_combiner = self.create_image_text_combiner()
-        self.visual_sensors = [sensor for sensor in cfg.input_sensors if is_a_visual_sensor(sensor)]
+        self.visual_sensors = [
+            sensor for sensor in cfg.input_sensors if is_a_visual_sensor(sensor)
+        ]
         self.final_adapter = nn.Sequential(
             nn.Linear(len(self.visual_sensors) * 32 * 7 * 12, self.cfg.final_out_dim),
             nn.LayerNorm(self.cfg.final_out_dim),
@@ -329,9 +359,17 @@ class NonTxMultiCameraVisualEncoder(nn.Module):
     def create_compressor(self):
         assert len(self.cfg.compressor_hidden_dims) == 2
         return nn.Sequential(
-            nn.Conv2d(self.image_encoder.cfg.output_size[0], self.cfg.compressor_hidden_dims[0], 1),
+            nn.Conv2d(
+                self.image_encoder.cfg.output_size[0],
+                self.cfg.compressor_hidden_dims[0],
+                1,
+            ),
             nn.ReLU(),
-            nn.Conv2d(self.cfg.compressor_hidden_dims[0], self.cfg.compressor_hidden_dims[1], 1),
+            nn.Conv2d(
+                self.cfg.compressor_hidden_dims[0],
+                self.cfg.compressor_hidden_dims[1],
+                1,
+            ),
             nn.ReLU(),
         )
 
@@ -360,7 +398,10 @@ class NonTxMultiCameraVisualEncoder(nn.Module):
         task_relevant_object_bbox=None,
         manip_task_relevant_object_bbox=None,
     ):
-        assert task_relevant_object_bbox is None and manip_task_relevant_object_bbox is None
+        assert (
+            task_relevant_object_bbox is None
+            and manip_task_relevant_object_bbox is None
+        )
 
         all_img_features = {}
         images_chw = None
@@ -383,8 +424,12 @@ class NonTxMultiCameraVisualEncoder(nn.Module):
             text_feats = self.encode_text(goals)  # BxLxD
 
         text_feats_ = self.text_adapter_for_combiner(text_feats)
-        text_feats_ = text_feats_.mean(dim=1, keepdim=True).tile(1, T, 1).reshape(B * T, -1)  # BTxD
-        text_feats_ = text_feats_.unsqueeze(-1).unsqueeze(-1).tile(1, 1, fH, fW)  # BTxDxHxW
+        text_feats_ = (
+            text_feats_.mean(dim=1, keepdim=True).tile(1, T, 1).reshape(B * T, -1)
+        )  # BTxD
+        text_feats_ = (
+            text_feats_.unsqueeze(-1).unsqueeze(-1).tile(1, 1, fH, fW)
+        )  # BTxDxHxW
 
         all_cam_feats = []
         for sensor in frames.keys():

@@ -26,7 +26,9 @@ def load_pl_ckpt_allenact(model, ckpt_pth, ckpt_prefix="model.", verbose=False):
         for k, v in ckpt_state_dict.items()
     }
 
-    params_to_load = [k for k in new_state_dict.keys() if ckpt_prefix + k in ckpt_state_dict]
+    params_to_load = [
+        k for k in new_state_dict.keys() if ckpt_prefix + k in ckpt_state_dict
+    ]
     for k in params_to_load:
         new_state_dict[k] = ckpt_state_dict[ckpt_prefix + k]
 
@@ -54,7 +56,8 @@ def load_pl_ckpt_allenact(model, ckpt_pth, ckpt_prefix="model.", verbose=False):
         k[len(ckpt_prefix) :]
         for k in ckpt_state_dict
         if k[len(ckpt_prefix) :] not in new_state_dict
-        and "visual_encoder.image_encoder.model" not in k  # we do not consider DINO weights
+        and "visual_encoder.image_encoder.model"
+        not in k  # we do not consider DINO weights
     ]
     if len(params_in_ckpt_not_in_model):
         print("-" * 80)
@@ -105,7 +108,9 @@ def load_pl_ckpt(model, ckpt_pth, ckpt_prefix="model.", verbose=False):
     # init new state dict with curr state dict
     new_state_dict = model.state_dict()
 
-    params_to_load = [k for k in new_state_dict.keys() if ckpt_prefix + k in ckpt_state_dict]
+    params_to_load = [
+        k for k in new_state_dict.keys() if ckpt_prefix + k in ckpt_state_dict
+    ]
     for k in params_to_load:
         new_state_dict[k] = ckpt_state_dict[ckpt_prefix + k]
 

@@ -46,12 +46,16 @@ def arg_parser_for_offline_training():
     parser.add_argument("--init_prob_sample_last_steps", type=float, default=0.0)
     parser.add_argument("--final_prob_sample_last_steps", type=float, default=0.0)
     parser.add_argument("--reduce_action_redundancy", type=str2bool, default=False)
-    parser.add_argument("--precision", type=str, default="32-true", choices=["32-true", "16-mixed"])
+    parser.add_argument(
+        "--precision", type=str, default="32-true", choices=["32-true", "16-mixed"]
+    )
     # resume training from last local checkpoint
     parser.add_argument("--resume_local", action=argparse.BooleanOptionalAction)
     # resume from specified run id and step
     parser.add_argument("--resume", action=argparse.BooleanOptionalAction)
-    parser.add_argument("--use_non_strict_ckpt_loading", action=argparse.BooleanOptionalAction)
+    parser.add_argument(
+        "--use_non_strict_ckpt_loading", action=argparse.BooleanOptionalAction
+    )
     parser.add_argument("--restart_optimizer", action=argparse.BooleanOptionalAction)
     # initialize model from a specified run_id and step
     parser.add_argument("--init_model", action=argparse.BooleanOptionalAction)
@@ -69,7 +73,9 @@ def arg_parser_for_offline_training():
 
 class AdamWSkipLoadStateDict(optim.AdamW):
     def load_state_dict(self, state_dict: Dict[str, Any]) -> None:
-        warnings.warn("AdamWSkipLoadStateDict IS IGNORING A REQUEST TO LOAD A STATE DICT")
+        warnings.warn(
+            "AdamWSkipLoadStateDict IS IGNORING A REQUEST TO LOAD A STATE DICT"
+        )
         return
 
 
@@ -106,7 +112,9 @@ class LitModel(pl.LightningModule):
             batch_item = batch[item_to_log]
             output_item = outputs["actions_logits"][item_to_log]
             pred = output_item.argmax(-1).cpu().tolist()
-            actions_pred = [self.preproc.cfg.action_list[action_idx] for action_idx in pred]
+            actions_pred = [
+                self.preproc.cfg.action_list[action_idx] for action_idx in pred
+            ]
             actions_gt = list(batch_item["observations"]["actions"])
             task = batch_item["observations"]["goal"]
 
@@ -200,10 +208,12 @@ class LitModel(pl.LightningModule):
 
     def on_train_epoch_start(self) -> None:
         prob_decay_size = (
-            self.args.init_prob_sample_last_steps - self.args.final_prob_sample_last_steps
+            self.args.init_prob_sample_last_steps
+            - self.args.final_prob_sample_last_steps
         ) / args.max_epochs
         current_prob = (
-            self.args.init_prob_sample_last_steps - prob_decay_size * self.trainer.current_epoch
+            self.args.init_prob_sample_last_steps
+            - prob_decay_size * self.trainer.current_epoch
         )
         next_prob = self.args.init_prob_sample_last_steps - prob_decay_size * (
             self.trainer.current_epoch + 1
@@ -254,7 +264,9 @@ class LitModel(pl.LightningModule):
             if metric_name == "f1score":
                 action_f1scores = metric.compute()
                 for action_idx, action_name in enumerate(self.preproc.cfg.action_list):
-                    metrics_to_log[f"{metric_name}/{action_name}/val"] = action_f1scores[action_idx]
+                    metrics_to_log[f"{metric_name}/{action_name}/val"] = (
+                        action_f1scores[action_idx]
+                    )
             else:
                 metrics_to_log[f"{metric_name}/val"] = metric.compute()
 
@@ -277,15 +289,21 @@ class LitModel(pl.LightningModule):
     def on_save_checkpoint(self, checkpoint):
         checkpoint["train_steps"] = self.train_steps
         if hasattr(self.logger, "_run_id"):
-            self.logger._checkpoint_name = f"ckpt-{self.logger._run_id}-{self.train_steps}"
+            self.logger._checkpoint_name = (
+                f"ckpt-{self.logger._run_id}-{self.train_steps}"
+            )
         else:
-            self.logger._checkpoint_name = f"ckpt-{self.logger.experiment.id}-{self.train_steps}"
+            self.logger._checkpoint_name = (
+                f"ckpt-{self.logger.experiment.id}-{self.train_steps}"
+            )
 
     def on_load_checkpoint(self, checkpoint):
         self.train_steps = checkpoint["train_steps"]
         self.trainer.fit_loop.epoch_progress.current.completed = checkpoint["epoch"]
 
-    def load_state_dict(self, state_dict: Mapping[str, Any], strict: Optional[bool] = None):
+    def load_state_dict(
+        self, state_dict: Mapping[str, Any], strict: Optional[bool] = None
+    ):
         state_dict = {
             k.replace(
                 "model.visual_encoder.image_encoder.model.visual.trunk",
@@ -334,7 +352,9 @@ def get_dataloader(subset: str, args):
         num_procs=1,  # can't use with DDP
         sliding_window=args.sliding_window,
         input_sensors=args.input_sensors,
-        reduce_action_redundancy=args.reduce_action_redundancy if subset == "train" else False,
+        reduce_action_redundancy=(
+            args.reduce_action_redundancy if subset == "train" else False
+        ),
     )
 
     return DataLoader(

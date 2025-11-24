@@ -31,14 +31,18 @@ def download_ckpt(info):
 
 def main():
     parser = argparse.ArgumentParser(description="Trained ckpt downloader.")
-    parser.add_argument("--save_dir", required=True, help="Directory to save the downloaded files.")
+    parser.add_argument(
+        "--save_dir", required=True, help="Directory to save the downloaded files."
+    )
     parser.add_argument(
         "--ckpt_ids",
         default=None,
         nargs="+",
         help=f"List of ckpt names to download, by default this will include all ids. Should be a subset of: {ALL_CKPT_IDS}",
     )
-    parser.add_argument("--num", "-n", default=1, type=int, help="Number of parallel downloads.")
+    parser.add_argument(
+        "--num", "-n", default=1, type=int, help="Number of parallel downloads."
+    )
     args = parser.parse_args()
 
     if args.ckpt_ids is None:

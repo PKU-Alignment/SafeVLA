@@ -80,8 +80,12 @@ class FetchRewardShaper(RewardShaper):
         )
 
         self.last_distance_from_arm = self.dist_to_target_from_arm_func()
-        self.last_distance_from_arm_to_colliders = self.dist_to_target_colliders_from_arm_func()
-        self.closest_distance_from_arm_to_colliders = self.last_distance_from_arm_to_colliders
+        self.last_distance_from_arm_to_colliders = (
+            self.dist_to_target_colliders_from_arm_func()
+        )
+        self.closest_distance_from_arm_to_colliders = (
+            self.last_distance_from_arm_to_colliders
+        )
 
         self._took_pickup_action = False
         self.got_reward_for_pickup = False
@@ -181,7 +185,9 @@ class RoomVisitRewardShaper(RewardShaper):
     ) -> None:
         super().__init__(**prepare_locals_for_super(locals()))
 
-        self.reachable_positions = self.controller.get_reachable_positions()  # TODO: here or later?
+        self.reachable_positions = (
+            self.controller.get_reachable_positions()
+        )  # TODO: here or later?
         self.reachable_locations = self.get_reachable_locations()
 
     def get_reachable_locations(self):
@@ -204,7 +210,9 @@ class RoomVisitRewardShaper(RewardShaper):
             self.task.last_num_seen_rooms = len(self.task.seen_rooms)
 
         locs_index = (
-            ((self.reachable_locations - np.array(self.get_agent_loc())) ** 2).sum(axis=1).argmin()
+            ((self.reachable_locations - np.array(self.get_agent_loc())) ** 2)
+            .sum(axis=1)
+            .argmin()
         )
         cur_loc = tuple(self.reachable_locations[locs_index])
         if cur_loc not in self.task.visited_loc:

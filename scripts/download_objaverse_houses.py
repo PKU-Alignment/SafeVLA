@@ -29,8 +29,12 @@ def download_and_rename_file(info):
 
 def main():
     parser = argparse.ArgumentParser(description="Train dataset downloader.")
-    parser.add_argument("--save_dir", required=True, help="Directory to save the downloaded files.")
-    parser.add_argument("--subset", required=True, help="Should be either 'train' or 'val'.")
+    parser.add_argument(
+        "--save_dir", required=True, help="Directory to save the downloaded files."
+    )
+    parser.add_argument(
+        "--subset", required=True, help="Should be either 'train' or 'val'."
+    )
 
     args = parser.parse_args()
 
@@ -46,7 +50,9 @@ def main():
     else:
         raise ValueError(f"Unknown subset: {args.subset}")
 
-    download_and_rename_file(dict(url=data_link, save_dir=args.save_dir, subset=args.subset))
+    download_and_rename_file(
+        dict(url=data_link, save_dir=args.save_dir, subset=args.subset)
+    )
 
 
 if __name__ == "__main__":

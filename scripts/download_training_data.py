@@ -46,9 +46,13 @@ def download_and_untar_file(info):
 
 def main():
     parser = argparse.ArgumentParser(description="Train dataset downloader.")
-    parser.add_argument("--save_dir", required=True, help="Directory to save the downloaded files.")
     parser.add_argument(
-        "--types", default="astar", help="Should be either 'astar', 'fifteen', or 'all'."
+        "--save_dir", required=True, help="Directory to save the downloaded files."
+    )
+    parser.add_argument(
+        "--types",
+        default="astar",
+        help="Should be either 'astar', 'fifteen', or 'all'.",
     )
     parser.add_argument(
         "--task_types",
@@ -56,17 +60,25 @@ def main():
         nargs="+",
         help=f"List of task names to download, by default this will include all tasks. Should be a subset of: {ALL_TASK_TYPES}",
     )
-    parser.add_argument("--num", "-n", default=1, type=int, help="Number of parallel downloads.")
+    parser.add_argument(
+        "--num", "-n", default=1, type=int, help="Number of parallel downloads."
+    )
     args = parser.parse_args()
 
-    assert args.types in ["fifteen", "all", "astar"], "Types should be either 'fifteen' or 'all'."
+    assert args.types in [
+        "fifteen",
+        "all",
+        "astar",
+    ], "Types should be either 'fifteen' or 'all'."
     if args.types in ["fifteen", "all"]:
         args.types = "{}_type".format(args.types)
 
     if args.task_types is None:
         args.task_types = ALL_TASK_TYPES
 
-    args.save_dir = os.path.abspath(os.path.expanduser(os.path.join(args.save_dir, args.types)))
+    args.save_dir = os.path.abspath(
+        os.path.expanduser(os.path.join(args.save_dir, args.types))
+    )
     os.makedirs(args.save_dir, exist_ok=True)
 
     download_args = []

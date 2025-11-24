@@ -8,7 +8,11 @@ import torch
 import torch.nn as nn
 from torch import optim
 
-from allenact.algorithms.onpolicy_sync.losses.ppo import PPOConfig, PPOValue
+from allenact.algorithms.onpolicy_sync.losses.ppo import (
+    PPOConfig,
+    PPOValue,
+    SafePPOValue,
+)
 
 from allenact.base_abstractions.preprocessor import Preprocessor
 from allenact.utils.experiment_utils import (
@@ -51,7 +55,6 @@ from environment.vision_sensors import (
 from environment.manipulation_sensors import AnObjectIsInHand
 
 from training.online.loss.customized_loss import PPOLogGrad, SafePPOLogGrad
-from utils.saferl_utils import SafePPOValue, SafeRolloutBlockStorage
 
 
 @dataclass
@@ -129,7 +132,8 @@ class DinoV2ViTSTSFMBase(BaseConfig):
                 chunk_size=64,
                 flatten=False,
                 normalize=True,
-                num_processes=self.params.num_train_processes // len(self.get_devices("train")),
+                num_processes=self.params.num_train_processes
+                // len(self.get_devices("train")),
             ),
         ]
 
@@ -156,7 +160,8 @@ class DinoV2ViTSTSFMBase(BaseConfig):
                     chunk_size=64,
                     flatten=False,
                     normalize=True,
-                    num_processes=self.params.num_train_processes // len(self.get_devices("train")),
+                    num_processes=self.params.num_train_processes
+                    // len(self.get_devices("train")),
                 ),
             ]
 
@@ -205,11 +210,16 @@ class DinoV2ViTSTSFMBase(BaseConfig):
 
     def create_model(self, **kwargs) -> nn.Module:
         goal_sensor_uuid = next(
-            (s.uuid for s in self.sensors if isinstance(s, TaskNaturalLanguageSpecSensor)),
+            (
+                s.uuid
+                for s in self.sensors
+                if isinstance(s, TaskNaturalLanguageSpecSensor)
+            ),
             None,
         )
 
         if self.params.use_sep_critic:
+            # model_init_func = DinoLLAMATxNavActorCriticSeparate
             model_init_func = SafeDinoLLAMATxNavActorCriticSeparate
         else:
             model_init_func = DinoLLAMATxNavActorCritic
@@ -247,11 +257,15 @@ class DinoV2ViTSTSFMBase(BaseConfig):
                 512,
             ),
             traj_idx_uuid="traj_index" if self.params.use_traj_indexing else None,
-            traj_max_idx=self.params.traj_max_index if self.params.use_traj_indexing else None,
+            traj_max_idx=(
+                self.params.traj_max_index if self.params.use_traj_indexing else None
+            ),
             relevant_object_box_uuid=(
                 "nav_task_relevant_object_bbox" if self.params.use_bbox else None
             ),
-            accurate_object_box_uuid="nav_accurate_object_bbox" if self.params.use_bbox else None,
+            accurate_object_box_uuid=(
+                "nav_accurate_object_bbox" if self.params.use_bbox else None
+            ),
             prev_checkpoint=self.params.il_ckpt_path,
         )
 
@@ -278,13 +292,19 @@ class DinoV2ViTSTSFMBase(BaseConfig):
 
     def training_pipeline(self, **kwargs):
         log_interval_small = (
-            self.params.num_train_processes * 128 * 5 if torch.cuda.is_available() else 1
+            self.params.num_train_processes * 128 * 5
+            if torch.cuda.is_available()
+            else 1
         )
         log_interval_medium = (
-            self.params.num_train_processes * 128 * 5 if torch.cuda.is_available() else 1
+            self.params.num_train_processes * 128 * 5
+            if torch.cuda.is_available()
+            else 1
         )
         log_interval_large = (
-            self.params.num_train_processes * 128 * 5 if torch.cuda.is_available() else 1
+            self.params.num_train_processes * 128 * 5
+            if torch.cuda.is_available()
+            else 1
         )
 
         batch_steps_0 = int(200000)
@@ -314,12 +334,14 @@ class DinoV2ViTSTSFMBase(BaseConfig):
             max_grad_norm=0.5,
             named_losses={
                 "ppo_log_loss": SafePPOLogGrad(**NewPPOConfig),
-                "ppo_value_loss": PPOValue(clip_param=0.1, use_clipped_value_loss=False),
-                "safe_ppo_value_loss": SafePPOValue(clip_param=0.1, use_clipped_value_loss=False),
+                "ppo_value_loss": PPOValue(
+                    clip_param=0.1, use_clipped_value_loss=False
+                ),
+                "safe_ppo_value_loss": SafePPOValue(
+                    clip_param=0.1, use_clipped_value_loss=False
+                ),
             },
-            named_storages={
-                "onpolicy": Builder(SafeRolloutBlockStorage),
-            },
+            # "safe_ppo_value_loss": SafePPOValue(clip_param=0.1, use_clipped_value_loss=False)},
             gamma=0.99,
             use_gae=True,
             gae_lambda=0.95,
@@ -358,7 +380,10 @@ class DinoV2ViTSTSFMBase(BaseConfig):
         )
 
     def wandb_logging_callback(self) -> SimpleWandbLogging:
-        assert self.params.wandb_entity is not None and self.params.wandb_project is not None, (
+        assert (
+            self.params.wandb_entity is not None
+            and self.params.wandb_project is not None
+        ), (
             "Entity and project must be set to use wandb logging."
             " Set these values when specifying the --config_kwargs when running the experiment."
         )

@@ -2,9 +2,8 @@ import abc
 from dataclasses import dataclass, fields
 from typing import Any, Dict, List, Literal, Optional, Union
 
-from utils.saferl_utils import SafeOnPolicyRunner
+from allenact.algorithms.onpolicy_sync.runner import OnPolicyRunner, SaveDirFormat
 from allenact.base_abstractions.experiment_config import ExperimentConfig
-from allenact.algorithms.onpolicy_sync.runner import SaveDirFormat
 
 
 @dataclass
@@ -27,7 +26,7 @@ class OnPolicyRunnerMixin(abc.ABC):
         raise NotImplementedError
 
     def build_runner(self, mode=Literal["train", "test"]):
-        return SafeOnPolicyRunner(
+        return OnPolicyRunner(
             config=self.get_config(),
             output_dir=self.output_dir,
             save_dir_fmt=SaveDirFormat[self.save_dir_fmt.upper()],
@@ -46,7 +45,9 @@ class OnPolicyRunnerMixin(abc.ABC):
 
     def train(
         self,
-        checkpoint: Optional[str] = None,
+        checkpoint: Optional[
+            str
+        ] = "/root/data/results/checkpoints/Fetch/2025-11-23_14-14-02/exp_Fetch__stage_02__steps_000024875664.pt",
         restart_pipeline: bool = False,
         max_sampler_processes_per_worker: Optional[int] = None,
         collect_valid_results: bool = False,
