@@ -59,7 +59,9 @@ docker run \
     -it ${DOCKER_IMAGE}:latest
 ```
 > DATA_PATH: storage training data | assets | checkpoint... 
-
+```bash
+bash scripts/run_docker.sh
+```
 ### Or create Python environment from scratch
 #### Environment create
 ```bash
