@@ -41,7 +41,7 @@ cd SafeVLA
 docker pull safevla/safevla:v1
 ```
 
-#### Then config ``script/run_docker.sh``
+#### Then config ``scripts/run_docker.sh``
 
 ```bash
 export CODE_PATH=/path/to/this/repo
@@ -160,7 +160,7 @@ python scripts/download_baseline_ckpt.py --ckpt_ids spoc_IL --save_dir PATH_TO_S
 ```
 
 ```
-bash script/eval.sh --task_type TASK_TYPE --ckpt_path IL_CKPT_PATH
+bash scripts/eval.sh --task_type TASK_TYPE --ckpt_path IL_CKPT_PATH
 ```
 > TASK_TYPE: spoc_IL | fetch | pickup | objectnav
 
@@ -171,7 +171,7 @@ python scripts/download_baseline_ckpt.py --ckpt_ids TASK_TYPE --save_dir PATH_TO
 ```
 
 ```
-bash script/eval.sh --task_type TASK_TYPE --ckpt_path RL_CKPT_PATH
+bash scripts/eval.sh --task_type TASK_TYPE --ckpt_path RL_CKPT_PATH
 ```
 ### For Safe Aligned model
 ```
@@ -179,7 +179,7 @@ python scripts/download_aligned_ckpt.py --ckpt_ids TASK_TYPE --save_dir PATH_TO_
 ```
 
 ```
-bash script/eval.sh --task_type TASK_TYPE --ckpt_path CKPT_PATH
+bash scripts/eval.sh --task_type TASK_TYPE --ckpt_path CKPT_PATH
 ```
 
 ---
