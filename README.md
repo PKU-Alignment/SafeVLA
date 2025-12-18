@@ -17,14 +17,24 @@
 <hr style="border: 2px solid gray;"></hr>
 
 ## Latest Updates
-- [2025-11-21] Model & Benchmark release
-- [2025-09-18] Paper accepted: SafeVLA was accept as NeurIPS 2025 Spotlight!
+- [2025-11-21] Model & Benchmark release.
+- [2025-09-18] Paper accepted: SafeVLA was accepted as NeurIPS 2025 Spotlight!
 - [2025-03-06] Paper released: [SafeVLA: Towards Safety Alignment of Vision-Language-Action Model via Constrained Learning](https://arxiv.org/abs/2503.03480)
-- [2025-02-28] Initial release
+- [2025-02-28] Initial release.
 
 <hr style="border: 2px solid gray;"></hr>
 
-
+## Citation
+If you find our code or models useful in your work, please cite [our paper](https://arxiv.org/abs/2503.03480):
+```bash
+@inproceedings{zhang25safevla,
+    title={SafeVLA: Towards Safety Alignment of Vision-Language-Action Model via Constrained Learning},
+    author={Borong Zhang and Yuhao Zhang and Jiaming Ji and Yingshan Lei and Josef Dai and Yuanpei Chen and Yaodong Yang},
+    booktitle={Thirty-ninth Conference on Neural Information Processing Systems},
+    year={2025},
+    url={https://openreview.net/forum?id=dt940loCBT}
+}
+```
 
 # Quick Start
 
@@ -96,6 +106,12 @@ Below we describe how to download the assets, annotations, and the ProcTHOR-Obja
 
 #### Downloading optimized Objaverse assets and annotations
 
+Activate conda environment:
+
+```bash
+conda activate safevla
+```
+
 Pick a directory `/path/to/objaverse_assets` where you'd like to save the assets and annotations. Then run the following commands:
 
 ```bash
@@ -138,6 +154,12 @@ python -m scripts.download_training_data --save_dir /path/to/training_data --tas
 > TASK_TYPES:  FetchType | PickupType | ObjectNavType
 ## 3 Evaluation
 ### Setting environment variables
+
+Activate conda environment:
+
+```bash
+conda activate safevla
+```
 
 Next you need to set the following environment variables:
 
@@ -192,6 +214,12 @@ bash scripts/eval.sh --task_type TASK_TYPE --ckpt_path CKPT_PATH
 
 ### Running Safe RL finetuning
 
+Activate conda environment:
+
+```bash
+conda activate safevla
+```
+
 Download pretrained IL ckpt:
 
 ```bash
@@ -222,17 +250,7 @@ python training/online/dinov2_vits_tsfm_base.py train \
 ```
 Or you can:
 ```bash
-bash scripts/train.sh --task_type TASK_TYPE_ID --il_ckpt_path CKPT_PATH
-```
-## Citation
-If you find our code or models useful in your work, please cite [our paper](https://arxiv.org/abs/2503.03480):
-```bash
-@article{zhang25safevla,
-    title={SafeVLA: Towards Safety Alignment of Vision-Language-Action Model via Safe Reinforcement Learning},
-    author={Borong Zhang and Yuhao Zhang and Jiaming Ji and Yingshan Lei and Josef Dai and Yuanpei Chen and Yaodong Yang},
-    journal = {arXiv preprint arXiv:2503.03480},
-    year={2025}
-} 
+bash scripts/train.sh --task_type TASK_TYPE_ID --il_ckpt_path IL_CKPT_PATH
 ```
 
 ## Acknowledgment

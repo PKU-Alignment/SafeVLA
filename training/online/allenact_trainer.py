@@ -20,6 +20,7 @@ class OnPolicyRunnerMixin(abc.ABC):
     machine_id: int = 0
     callbacks: str = ""
     cost_limit: float = None
+    checkpoint: Optional[str] = None
 
     @abc.abstractmethod
     def get_config(self) -> ExperimentConfig:
@@ -47,7 +48,7 @@ class OnPolicyRunnerMixin(abc.ABC):
         self,
         checkpoint: Optional[
             str
-        ] = "",
+        ] = None,
         restart_pipeline: bool = False,
         max_sampler_processes_per_worker: Optional[int] = None,
         collect_valid_results: bool = False,
@@ -55,6 +56,9 @@ class OnPolicyRunnerMixin(abc.ABC):
         enable_crash_recovery: bool = False,
         save_ckpt_at_every_host: bool = False,
     ):
+        if checkpoint is None and hasattr(self, 'checkpoint'):
+            checkpoint = self.checkpoint
+            print(f"Using checkpoint from self.checkpoint: {checkpoint}")
         runner = self.build_runner(mode="train")
         runner.start_train(
             checkpoint=checkpoint,
