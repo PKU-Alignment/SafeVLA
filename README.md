@@ -81,9 +81,9 @@ bash scripts/install.sh
 ```
 #### Then install allenact, AI2THOR, Allenact-plugins
 ```bash
-pip install --no-deps  "git+https://github.com/allenai/allenact.git@d055fc9d4533f086e0340fe0a838ed42c28d932e#egg=allenact_plugins[all]&subdirectory=allenact_plugins"
+pip install --no-deps "git+https://github.com/allenai/allenact.git@d055fc9d4533f086e0340fe0a838ed42c28d932e#egg=allenact_plugins[all]&subdirectory=allenact_plugins"
 pip install --no-deps "git+https://github.com/Ethyn13/allenact.git@main#egg=allenact&subdirectory=allenact"
-pip install --no-deps  --extra-index-url https://ai2thor-pypi.allenai.org ai2thor==0+966bd7758586e05d18f6181f459c0e90ba318bec
+pip install --no-deps --extra-index-url https://ai2thor-pypi.allenai.org ai2thor==0+966bd7758586e05d18f6181f459c0e90ba318bec
 ```
 
 Due to occasional instability in the AI2-THOR simulator, terminated evaluation or training runs may leave behind zombie processes that keep the GPU occupied, or cause NCCL failures in the system.
@@ -91,7 +91,14 @@ You can clean up the processes with:
 ```bash
 pkill -f thor-CloudRendering
 ```
-For the latter, a full system reboot is required — therefore, using Docker is strongly recommended.
+
+**Alternatively, for a more direct approach** that forcibly kills all GPU-related processes:
+```bash
+# Note: Do NOT run with sudo, as it may kill system-critical GPU processes
+fuser -v /dev/nvidia* | awk '{for(i=1;i<=NF;i++)print "kill -9 " $i;}' | sh
+```
+
+For the NCCL failures in the system, a full system reboot is required — therefore, using Docker is strongly recommended.
 
 ## 2. Training Data and Assets Config
 In order to run training and evaluation you'll need:
@@ -251,6 +258,11 @@ python training/online/dinov2_vits_tsfm_base.py train \
 Or you can:
 ```bash
 bash scripts/train.sh --task_type TASK_TYPE_ID --il_ckpt_path IL_CKPT_PATH
+```
+
+**Resume training from checkpoint:**
+```bash
+bash scripts/train.sh --task_type TASK_TYPE_ID --il_ckpt_path IL_CKPT_PATH --checkpoint PATH_TO_CHECKPOINT
 ```
 
 ## Acknowledgment
