@@ -94,7 +94,7 @@ pkill -f thor-CloudRendering
 
 **Alternatively, for a more direct approach** that forcibly kills all GPU-related processes:
 ```bash
-# Note: Do NOT run with sudo, as it may kill system-critical GPU processes
+# Note: Do NOT run with sudo, as it may kill system GPU processes
 fuser -v /dev/nvidia* | awk '{for(i=1;i<=NF;i++)print "kill -9 " $i;}' | sh
 ```
 
