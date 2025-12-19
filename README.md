@@ -17,14 +17,24 @@
 <hr style="border: 2px solid gray;"></hr>
 
 ## Latest Updates
-- [2025-11-21] Model & Benchmark release
-- [2025-09-18] Paper accepted: SafeVLA was accept as NeurIPS 2025 Spotlight!
+- [2025-11-21] Model & Benchmark release.
+- [2025-09-18] Paper accepted: SafeVLA was accepted as NeurIPS 2025 Spotlight!
 - [2025-03-06] Paper released: [SafeVLA: Towards Safety Alignment of Vision-Language-Action Model via Constrained Learning](https://arxiv.org/abs/2503.03480)
-- [2025-02-28] Initial release
+- [2025-02-28] Initial release.
 
 <hr style="border: 2px solid gray;"></hr>
 
-
+## Citation
+If you find our code or models useful in your work, please cite [our paper](https://arxiv.org/abs/2503.03480):
+```bash
+@inproceedings{zhang25safevla,
+    title={SafeVLA: Towards Safety Alignment of Vision-Language-Action Model via Constrained Learning},
+    author={Borong Zhang and Yuhao Zhang and Jiaming Ji and Yingshan Lei and Josef Dai and Yuanpei Chen and Yaodong Yang},
+    booktitle={Thirty-ninth Conference on Neural Information Processing Systems},
+    year={2025},
+    url={https://openreview.net/forum?id=dt940loCBT}
+}
+```
 
 # Quick Start
 
@@ -71,9 +81,9 @@ bash scripts/install.sh
 ```
 #### Then install allenact, AI2THOR, Allenact-plugins
 ```bash
-pip install --no-deps  "git+https://github.com/allenai/allenact.git@d055fc9d4533f086e0340fe0a838ed42c28d932e#egg=allenact_plugins[all]&subdirectory=allenact_plugins"
+pip install --no-deps "git+https://github.com/allenai/allenact.git@d055fc9d4533f086e0340fe0a838ed42c28d932e#egg=allenact_plugins[all]&subdirectory=allenact_plugins"
 pip install --no-deps "git+https://github.com/Ethyn13/allenact.git@main#egg=allenact&subdirectory=allenact"
-pip install --no-deps  --extra-index-url https://ai2thor-pypi.allenai.org ai2thor==0+966bd7758586e05d18f6181f459c0e90ba318bec
+pip install --no-deps --extra-index-url https://ai2thor-pypi.allenai.org ai2thor==0+966bd7758586e05d18f6181f459c0e90ba318bec
 ```
 
 Due to occasional instability in the AI2-THOR simulator, terminated evaluation or training runs may leave behind zombie processes that keep the GPU occupied, or cause NCCL failures in the system.
@@ -81,7 +91,14 @@ You can clean up the processes with:
 ```bash
 pkill -f thor-CloudRendering
 ```
-For the latter, a full system reboot is required — therefore, using Docker is strongly recommended.
+
+**Alternatively, for a more direct approach** that forcibly kills all GPU-related processes:
+```bash
+# Note: Do NOT run with sudo, as it may kill system GPU processes
+fuser -v /dev/nvidia* | awk '{for(i=1;i<=NF;i++)print "kill -9 " $i;}' | sh
+```
+
+For the NCCL failures in the system, a full system reboot is required — therefore, using Docker is strongly recommended.
 
 ## 2. Training Data and Assets Config
 In order to run training and evaluation you'll need:
@@ -95,6 +112,12 @@ Below we describe how to download the assets, annotations, and the ProcTHOR-Obja
 ### 2.1 Downloading assets, annotations, and houses
 
 #### Downloading optimized Objaverse assets and annotations
+
+Activate conda environment:
+
+```bash
+conda activate safevla
+```
 
 Pick a directory `/path/to/objaverse_assets` where you'd like to save the assets and annotations. Then run the following commands:
 
@@ -138,6 +161,12 @@ python -m scripts.download_training_data --save_dir /path/to/training_data --tas
 > TASK_TYPES:  FetchType | PickupType | ObjectNavType
 ## 3 Evaluation
 ### Setting environment variables
+
+Activate conda environment:
+
+```bash
+conda activate safevla
+```
 
 Next you need to set the following environment variables:
 
@@ -192,6 +221,12 @@ bash scripts/eval.sh --task_type TASK_TYPE --ckpt_path CKPT_PATH
 
 ### Running Safe RL finetuning
 
+Activate conda environment:
+
+```bash
+conda activate safevla
+```
+
 Download pretrained IL ckpt:
 
 ```bash
@@ -222,17 +257,12 @@ python training/online/dinov2_vits_tsfm_base.py train \
 ```
 Or you can:
 ```bash
-bash scripts/train.sh --task_type TASK_TYPE_ID --il_ckpt_path CKPT_PATH
+bash scripts/train.sh --task_type TASK_TYPE_ID --il_ckpt_path IL_CKPT_PATH
 ```
-## Citation
-If you find our code or models useful in your work, please cite [our paper](https://arxiv.org/abs/2503.03480):
+
+**Resume training from checkpoint:**
 ```bash
-@article{zhang25safevla,
-    title={SafeVLA: Towards Safety Alignment of Vision-Language-Action Model via Safe Reinforcement Learning},
-    author={Borong Zhang and Yuhao Zhang and Jiaming Ji and Yingshan Lei and Josef Dai and Yuanpei Chen and Yaodong Yang},
-    journal = {arXiv preprint arXiv:2503.03480},
-    year={2025}
-} 
+bash scripts/train.sh --task_type TASK_TYPE_ID --il_ckpt_path IL_CKPT_PATH --checkpoint PATH_TO_CHECKPOINT
 ```
 
 ## Acknowledgment
