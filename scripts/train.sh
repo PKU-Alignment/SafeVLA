@@ -1,8 +1,8 @@
 #!/bin/bash
 
-export PYTHONPATH=/path/to/SafeVLA
-export OBJAVERSE_HOUSES_DIR=/path/to/objaverse_houses
-export OBJAVERSE_DATA_DIR=/path/to/objaverse_assets
+export PYTHONPATH=/path/to/SafeVLA # change to your own path
+export OBJAVERSE_HOUSES_DIR=/path/to/objaverse_houses  # change to your own path
+export OBJAVERSE_DATA_DIR=/path/to/objaverse_assets  # change to your own path
 export HF_ENDPOINT=https://hf-mirror.com
 export ALLENACT_DEBUG=True
 export ALLENACT_DEBUG_VST_TIMEOUT=2000
@@ -13,26 +13,26 @@ il_ckpt_path=""
 resume_checkpoint=""
 wandb_project=""
 wandb_entity=""
-num_train_processes=8
-output_dir="/path/to/ckpt_dir"
-dataset_dir="/path/to/dataset/astar"
+num_train_processes=32
+output_dir=""
+dataset_dir=""
 cost_limit=2.31
 
 # Function to print usage
 print_usage() {
-    echo "Usage: $0 --task_type <type> --il_ckpt_path <path> [OPTIONS]"
+    echo "Usage: $0 --task_type <type> --il_ckpt_path <path> --output_dir <path> --dataset_dir <path> [OPTIONS]"
     echo ""
     echo "Required arguments:"
     echo "  --task_type           Task type: objectnav | pickup | fetch"
     echo "  --il_ckpt_path        Path to initial pretrained model"
+    echo "  --output_dir          Output directory for checkpoints"
+    echo "  --dataset_dir         Dataset directory"
     echo ""
     echo "Optional arguments:"
     echo "  --checkpoint          Path to checkpoint for resuming training"
     echo "  --wandb_project       WandB project name"
     echo "  --wandb_entity        WandB entity name"
-    echo "  --num_train_processes Number of training processes (default: 8)"
-    echo "  --output_dir          Output directory for checkpoints (default: /path/to/ckpt_dir)"
-    echo "  --dataset_dir         Dataset directory (default: /path/to/dataset/astar)"
+    echo "  --num_train_processes Number of training processes (default: 32)"
     echo "  --cost_limit          Cost limit (default: 2.31)"
     echo "  --help                Show this help message"
     exit 1
@@ -88,7 +88,7 @@ while [[ $# -gt 0 ]]; do
 done
 
 # Check required arguments
-if [ -z "$task_type" ] || [ -z "$il_ckpt_path" ]; then
+if [ -z "$task_type" ] || [ -z "$il_ckpt_path" ] || [ -z "$output_dir" ] || [ -z "$dataset_dir" ]; then
     echo "Error: Missing required arguments"
     echo ""
     print_usage
