@@ -230,7 +230,7 @@ conda activate safevla
 Download pretrained IL ckpt:
 
 ```bash
-python scripts/download_il_ckpt.py --ckpt_ids spoc_IL --save_dir PATH_TO_SAVE_DIR
+python scripts/download_baseline_ckpt.py --ckpt_ids spoc_IL --save_dir PATH_TO_SAVE_DIR
 ```
 
 Run Safe RL training:
