@@ -6,6 +6,7 @@
   <a href="https://arxiv.org/abs/2503.03480"><img src="https://img.shields.io/badge/arXiv-2503.03480-red?style=for-the-badge&link=https%3A%2F%2Farxiv.org%2Fabs%2F2503.03480" alt="arXiv"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-%20Apache%202.0-green?style=for-the-badge&link=https%3A%2F%2Farxiv.org%2Fabs%2F2503.03480" alt="License"></a>
   <a href="https://pku-safevla.github.io"><img src="https://img.shields.io/badge/website-github.io-lightblue?style=for-the-badge" alt="Website"></a>
+  <a href="https://huggingface.co/SafetyEmbodiedAI"><img src="https://img.shields.io/badge/🤗%20models%20%26%20datasets-available-yellow?style=for-the-badge" alt="Models & Datasets"></a>
 </p>
 
 
